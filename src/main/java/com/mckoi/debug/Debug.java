@@ -2,7 +2,7 @@
  * com.mckoi.debug.Debug  21 May 1998
  *
  * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2010  Diehl and Associates, Inc.
+ * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 3 as published by
