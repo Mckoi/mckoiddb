@@ -78,6 +78,7 @@ public class ODBViewer implements PathViewer {
 
 
 
+  @Override
   public JComponent getObjectView(TreePath selected_path) {
 
     if (selected_path.getPathCount() == 4) {
@@ -108,14 +109,17 @@ public class ODBViewer implements PathViewer {
 
   }
 
+  @Override
   public MutableTreeNode getPathTree() {
     return path_tree;
   }
 
+  @Override
   public JComponent queryComponent(String dialog_name) {
     return new JLabel("No query component for Object Database yet.", JLabel.CENTER);
   }
 
+  @Override
   public void refresh() {
     // Create a new transaction,
     transaction = session.createTransaction();
