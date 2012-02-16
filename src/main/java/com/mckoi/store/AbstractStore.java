@@ -25,23 +25,20 @@
 
 package com.mckoi.store;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.io.*;
+import com.mckoi.data.Iterator64Bit;
 import com.mckoi.util.ByteArrayUtil;
 import com.mckoi.util.LongList;
 import com.mckoi.util.UserTerminal;
-// Is this interface mis-packaged?  I'm not certain if this wants to be
-// dependent on classes in the treestore hierarchy.
-import com.mckoi.data.Iterator64Bit;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 
 /**
  * Provides an abstract implementation of Store for continuous address space
- * storage systems.  This implements a bin based best-fit recycling algorithm
+ * storage systems. This implements a bin based best-fit recycling algorithm
  * for reallocation of freed space.  The store manages a structure that points
- * to bins of freed space of specific sizes.  When an allocation is requested
+ * to bins of freed space of specific sizes. When an allocation is requested
  * the structure is searched for the first bin that contains an area that best
  * fits the size requested.
  * <p>
@@ -50,7 +47,7 @@ import com.mckoi.data.Iterator64Bit;
  * in a unworkable (corrupt) state.
  * <p>
  * This implementation assumes the derived data structure can map a 64-bit
- * pointer into a continous addressable space (for example, a hard disk).  It
+ * pointer into a continuous addressable space (for example, a hard disk). It
  * makes no assumptions such as the address space being divided by sectors and
  * therefore does not pad data.  The class does not require the underlying
  * model to support efficient data relocation.
@@ -81,7 +78,7 @@ public abstract class AbstractStore implements Store {
 
   /**
    * The total amount of allocated space within this store since the store
-   * was openned.  Note that this could be a negative amount if more space
+   * was opened.  Note that this could be a negative amount if more space
    * was freed than allocated.
    */
   protected long total_allocated_space;
@@ -145,14 +142,14 @@ public abstract class AbstractStore implements Store {
     out.writeByte(0);      // 16
 
     out.flush();
-    byte[] buf = new byte[(int) DATA_AREA_OFFSET];
+    byte[] buf1 = new byte[(int) DATA_AREA_OFFSET];
     byte[] buf2 = bout.toByteArray();
-    System.arraycopy(buf2, 0, buf, 0, buf2.length);;
+    System.arraycopy(buf2, 0, buf1, 0, buf2.length);
     for (int i = (int) BIN_AREA_OFFSET; i < (int) DATA_AREA_OFFSET; ++i) {
-      buf[i] = (byte) 255;
+      buf1[i] = (byte) 255;
     }
     
-    writeByteArrayToPT(0, buf, 0, buf.length);
+    writeByteArrayToPT(0, buf1, 0, buf1.length);
   }
   
   
@@ -503,7 +500,7 @@ public abstract class AbstractStore implements Store {
                            true, 20);
 
     if (b) {
-      if (repairs.size() == 0) {
+      if (repairs.isEmpty()) {
         terminal.println("- Store areas are intact.");
       }
       else {
@@ -611,7 +608,7 @@ public abstract class AbstractStore implements Store {
   }
 
   /**
-   * Given a sorted set of areas (as an Interator64Bit object) that represents
+   * Given a sorted set of areas (as an Iterator64Bit object) that represents
    * the graph Area pointer in this store of some complete structure, this
    * will scan the store and determine if there are any areas that are in the
    * graph but deleted, or that are not deleted and not in the graph.  This
@@ -824,14 +821,14 @@ public abstract class AbstractStore implements Store {
   /**
    * WriteByteTo pass-through method.
    */
-  private final void writeByteToPT(long position, int b) throws IOException {
+  private void writeByteToPT(long position, int b) throws IOException {
     writeByteTo(position, b);
   }
 
   /**
    * WriteByteArrayTo pass-through method.
    */
-  private final void writeByteArrayToPT(long position,
+  private void writeByteArrayToPT(long position,
                             byte[] buf, int off, int len) throws IOException {
     writeByteArrayTo(position, buf, off, len);
   }
@@ -1453,9 +1450,9 @@ public abstract class AbstractStore implements Store {
    * throws an exception.
    */
   private long getAreaSize(final long pointer) throws IOException {
-    final byte[] buf = new byte[8];
-    readByteArrayFrom(pointer, buf, 0, 8);
-    final long v = ByteArrayUtil.getLong(buf, 0);
+    final byte[] buf1 = new byte[8];
+    readByteArrayFrom(pointer, buf1, 0, 8);
+    final long v = ByteArrayUtil.getLong(buf1, 0);
     if ((v & 0x08000000000000000L) != 0) {
       throw new IOException("Area is deleted.");
     }
@@ -1465,15 +1462,18 @@ public abstract class AbstractStore implements Store {
   
   // ---------- Implemented from Store ----------
 
+  @Override
   public synchronized AreaWriter createArea(long size) throws IOException {
     long pointer = alloc(size);
     return new StoreAreaWriter(pointer, size);
   }
 
+  @Override
   public synchronized void deleteArea(long id) throws IOException {
     free(id);
   }
 
+  @Override
   public InputStream getAreaInputStream(long id) throws IOException {
     if (id == -1) {
       return new StoreAreaInputStream(FIXED_AREA_OFFSET, 64);
@@ -1483,6 +1483,7 @@ public abstract class AbstractStore implements Store {
     }
   }
 
+  @Override
   public Area getArea(long id) throws IOException {
     // If this is the fixed area
     if (id == -1) {
@@ -1494,6 +1495,7 @@ public abstract class AbstractStore implements Store {
     }
   }
 
+  @Override
   public MutableArea getMutableArea(long id) throws IOException {
     // If this is the fixed area
     if (id == -1) {
@@ -1505,6 +1507,7 @@ public abstract class AbstractStore implements Store {
     }
   }
 
+  @Override
   public boolean lastCloseClean() {
     return !dirty_open;
   }
@@ -1523,6 +1526,7 @@ public abstract class AbstractStore implements Store {
       this.mark = -1;
     }
     
+    @Override
     public int read() throws IOException {
       if (pointer >= end_pointer) {
         return -1;
@@ -1532,10 +1536,12 @@ public abstract class AbstractStore implements Store {
       return b;
     }
 
+    @Override
     public int read(byte[] buf) throws IOException {
       return read(buf, 0, buf.length);
     }
     
+    @Override
     public int read(byte[] buf, int off, int len) throws IOException {
       // Is the end of the stream reached?
       if (pointer >= end_pointer) {
@@ -1552,28 +1558,34 @@ public abstract class AbstractStore implements Store {
       return read_count;
     }
 
+    @Override
     public long skip(long skip) throws IOException {
       long to_skip = Math.min(end_pointer - pointer, skip);
       pointer += to_skip;
       return to_skip;
     }
 
+    @Override
     public int available() throws IOException {
       return (int) (end_pointer - pointer);
     }
     
+    @Override
     public void close() throws IOException {
       // Do nothing
     }
     
+    @Override
     public void mark(int read_limit) {
       mark = pointer;
     }
     
+    @Override
     public void reset() throws IOException {
       pointer = mark;
     }
     
+    @Override
     public boolean markSupported() {
       return true;
     }
@@ -1637,18 +1649,22 @@ public abstract class AbstractStore implements Store {
       return old_pos;
     }
 
+    @Override
     public long getID() {
       return id;
     }
 
+    @Override
     public int position() {
       return (int) (position - start_pointer);
     }
     
+    @Override
     public int capacity() {
       return (int) (end_pointer - start_pointer);
     }
     
+    @Override
     public void position(int position) throws IOException {
       long act_position = start_pointer + position;
       if (act_position >= 0 && act_position < end_pointer) {
@@ -1658,46 +1674,53 @@ public abstract class AbstractStore implements Store {
       throw new IOException("Moved position out of bounds.");
     }
 
+    @Override
     public void copyTo(AreaWriter destination_writer,
                        int size) throws IOException {
       // NOTE: Assuming 'destination' is a StoreArea, the temporary buffer
       // could be optimized away to a direct System.arraycopy.  However, this
       // function would need to be written as a lower level IO function.
-      final int BUFFER_SIZE = 2048;
-      byte[] buf = new byte[BUFFER_SIZE];
-      int to_copy = Math.min(size, BUFFER_SIZE);
+      final int COPY_BUFFER_SIZE = 2048;
+      byte[] buf = new byte[COPY_BUFFER_SIZE];
+      int to_copy = Math.min(size, COPY_BUFFER_SIZE);
 
       while (to_copy > 0) {
         get(buf, 0, to_copy);
         destination_writer.put(buf, 0, to_copy);
         size -= to_copy;
-        to_copy = Math.min(size, BUFFER_SIZE);
+        to_copy = Math.min(size, COPY_BUFFER_SIZE);
       }
     }
     
+    @Override
     public byte get() throws IOException {
       return (byte) readByteFrom(checkPositionBounds(1));
     }
     
+    @Override
     public void get(byte[] buf, int off, int len) throws IOException {
       readByteArrayFrom(checkPositionBounds(len), buf, off, len);
     }
     
+    @Override
     public short getShort() throws IOException {
       readByteArrayFrom(checkPositionBounds(2), buffer, 0, 2);
       return ByteArrayUtil.getShort(buffer, 0);
     }
     
+    @Override
     public int getInt() throws IOException {
       readByteArrayFrom(checkPositionBounds(4), buffer, 0, 4);
       return ByteArrayUtil.getInt(buffer, 0);
     }
     
+    @Override
     public long getLong() throws IOException {
       readByteArrayFrom(checkPositionBounds(8), buffer, 0, 8);
       return ByteArrayUtil.getLong(buffer, 0);
     }
     
+    @Override
     public char getChar() throws IOException {
       readByteArrayFrom(checkPositionBounds(2), buffer, 0, 2);
       return ByteArrayUtil.getChar(buffer, 0);
@@ -1705,6 +1728,7 @@ public abstract class AbstractStore implements Store {
 
 
 
+    @Override
     public String toString() {
       return "[Area start_pointer=" + start_pointer +
              " end_pointer=" + end_pointer +
@@ -1728,43 +1752,52 @@ public abstract class AbstractStore implements Store {
       super(id, pointer, fixed_size);
     }
     
+    @Override
     public void checkOut() throws IOException {
       // Currently, no-op
     }
     
+    @Override
     public void put(byte b) throws IOException {
       writeByteToPT(checkPositionBounds(1), b);
     }
 
+    @Override
     public void put(byte[] buf, int off, int len) throws IOException {
       writeByteArrayToPT(checkPositionBounds(len), buf, off, len);
     }
 
+    @Override
     public void put(byte[] buf) throws IOException {
       put(buf, 0, buf.length);
     }
 
+    @Override
     public void putShort(short s) throws IOException {
       ByteArrayUtil.setShort(s, buffer, 0);
       writeByteArrayToPT(checkPositionBounds(2), buffer, 0, 2);
     }
 
+    @Override
     public void putInt(int i) throws IOException {
       ByteArrayUtil.setInt(i, buffer, 0);
       writeByteArrayToPT(checkPositionBounds(4), buffer, 0, 4);
     }
     
+    @Override
     public void putLong(long l) throws IOException {
       ByteArrayUtil.setLong(l, buffer, 0);
       writeByteArrayToPT(checkPositionBounds(8), buffer, 0, 8);
     }
 
+    @Override
     public void putChar(char c) throws IOException {
       ByteArrayUtil.setChar(c, buffer, 0);
       writeByteArrayToPT(checkPositionBounds(2), buffer, 0, 2);
     }
     
     
+    @Override
     public String toString() {
       return "[MutableArea start_pointer=" + start_pointer +
              " end_pointer=" + end_pointer +
@@ -1787,22 +1820,27 @@ public abstract class AbstractStore implements Store {
       this.writer = writer;
     }
 
+    @Override
     public void write(int b) throws IOException {
       writer.put((byte) b);
     }
 
+    @Override
     public void write(byte[] buf) throws IOException {
       writer.put(buf, 0, buf.length);
     }
 
+    @Override
     public void write(byte[] buf, int off, int len) throws IOException {
       writer.put(buf, off, len);
     }
 
+    @Override
     public void flush() throws IOException {
       // do nothing
     }
 
+    @Override
     public void close() throws IOException {
       // do nothing
     }
@@ -1818,10 +1856,12 @@ public abstract class AbstractStore implements Store {
       super(pointer, pointer + 8, fixed_size);
     }
 
+    @Override
     public OutputStream getOutputStream() {
       return new AreaOutputStream(this);
     }
 
+    @Override
     public void finish() throws IOException {
       // Currently, no-op
     }
