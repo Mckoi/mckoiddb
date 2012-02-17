@@ -1,0 +1,64 @@
+
+MckoiDDB
+Mckoi Distributed Database ( http://www.mckoi.com/ )
+Author: Tobias Downer <toby@mckoi.com>
+----------------------------------------------------
+
+Description
+===========
+
+MckoiDDB is a distributed database system written in Java. MckoiDDB
+allows you to manage the storage resources of a cluster of servers
+in a network, and provides a client API for developing structured
+data models.
+
+Go to http://www.mckoi.com/ for documentation and other resources
+associated with MckoiDDB.
+
+
+License
+=======
+
+MckoiDDB is released under the GPL version 3 open source license.
+See LICENSE.txt for details of the license. If the license is not
+present go to http://www.mckoi.com/ and download an official
+distribution to receive a copy of the license.
+
+
+Requirements
+============
+
+MckoiDDB requires Java 1.6 to run and build. Other than requiring
+Java 1.6, MckoiDDB has no dependencies on external packages.
+
+
+Included in this release
+========================
+
+demo/        Demonstrations from the documentation.
+lib/         Precompiled Binaries.
+LICENSE.html The license of the software in HTML format.
+LICENSE.txt  The license of the software in plain text format.
+README       This file.
+src.zip      The source code.
+
+
+Installing and Using MckoiDDB
+=============================
+
+A quick start guide for installing MckoiDDB can be found at the
+link below;
+
+  http://www.mckoi.com/mckoiddb/docs/Quick%20Start%20Guide.html
+
+
+Building MckoiDDB
+=================
+
+There are no special instructions needed to build MckoiDDB.
+Simply import the source into your favourite build tool or
+editor.
+
+The source code is arranged in a standard Maven format and a
+Maven pom.xml build script is included with the source code
+distribution if you wish to use that.

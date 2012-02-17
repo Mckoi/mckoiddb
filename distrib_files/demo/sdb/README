@@ -1,0 +1,8 @@
+
+This directory contains a simple example of a Java application that uses
+the Simple Database API to connect to a MckoiDDB installation and
+creates and queries a table.
+
+Note that you must edit the 'client.conf' file and set the
+'network_password' and the location of the manager server to values
+appropriate to your installation.
