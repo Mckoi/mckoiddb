@@ -1,3 +1,4 @@
+@echo off
+echo Console Command: console [network password]
 
-rem NOTE: Syntax console [network password]
-java -cp ..\..\lib\mckoiddb.jar com.mckoi.runtime.AdminConsole -netpassword %1
+java -cp ..\..\lib\Mckoi*.jar com.mckoi.runtime.AdminConsole -netpassword %1

@@ -1,1 +1,1 @@
-java -cp ..\..\lib\mckoiddb.jar com.mckoi.runtime.MckoiMachineNode -host 127.0.0.1 -port 3500
+java -cp ..\..\lib\MckoiDDB*.jar com.mckoi.runtime.MckoiMachineNode -host 127.0.0.1 -port 3500
