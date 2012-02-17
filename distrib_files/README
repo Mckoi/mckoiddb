@@ -12,8 +12,8 @@ allows you to manage the storage resources of a cluster of servers
 in a network, and provides a client API for developing structured
 data models.
 
-Go to http://www.mckoi.com/ for documentation and other resources
-associated with MckoiDDB.
+Go to http://www.mckoi.com/mckoiddb/ for documentation and other
+resources associated with MckoiDDB.
 
 
 License
@@ -72,4 +72,4 @@ use the following command;
 
   mvn install
 
-The compiled binary will be found in the target/ directory.
+The compiled binary will be found in the 'target/' directory.
