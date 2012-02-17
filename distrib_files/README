@@ -1,8 +1,8 @@
 
 MckoiDDB
-Mckoi Distributed Database ( http://www.mckoi.com/ )
+Mckoi Distributed Database ( http://www.mckoi.com/mckoiddb/ )
 Author: Tobias Downer <toby@mckoi.com>
-----------------------------------------------------
+-------------------------------------------------------------
 
 Description
 ===========
@@ -21,26 +21,32 @@ License
 
 MckoiDDB is released under the GPL version 3 open source license.
 See LICENSE.txt for details of the license. If the license is not
-present go to http://www.mckoi.com/ and download an official
-distribution to receive a copy of the license.
+present in this distribution, please go to http://www.mckoi.com/
+and download an official distribution to receive a copy of the
+license.
 
 
 Requirements
 ============
 
 MckoiDDB requires Java 1.6 to run and build. Other than requiring
-Java 1.6, MckoiDDB has no dependencies on external packages.
+Java 1.6, MckoiDDB has no dependencies on any other external
+libraries.
 
 
 Included in this release
 ========================
 
+The important files and directories in this distribution are;
+
 demo/        Demonstrations from the documentation.
 lib/         Precompiled Binaries.
+src/         The source directory.
 LICENSE.html The license of the software in HTML format.
 LICENSE.txt  The license of the software in plain text format.
 README       This file.
-src.zip      The source code.
+COPYRIGHT    The MckoiDDB copyright message.
+pom.xml      Maven build file.
 
 
 Installing and Using MckoiDDB
@@ -56,9 +62,14 @@ Building MckoiDDB
 =================
 
 There are no special instructions needed to build MckoiDDB.
-Simply import the source into your favourite build tool or
+Simply import the source into your favorite build tool or
 editor.
 
 The source code is arranged in a standard Maven format and a
-Maven pom.xml build script is included with the source code
-distribution if you wish to use that.
+Maven pom.xml build script is included with this distribution
+if you wish to use that. To compile the source under Maven,
+use the following command;
+
+  mvn install
+
+The compiled binary will be found in the target/ directory.
