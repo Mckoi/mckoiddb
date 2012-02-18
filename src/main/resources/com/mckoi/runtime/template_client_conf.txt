@@ -1,0 +1,37 @@
+# Client configuration
+# ====================
+
+# The location of the manager server(s) on the network.
+#
+# Usage example for single manager server;
+#
+#  manager_address=192.168.13.10:3500
+#
+# Usage example for multiple manager servers;
+#
+#  manager_address=192.168.13.10:3500,\
+#                  192.168.13.12:3500,\
+#                  192.168.13.13:3500
+
+manager_address=${MANAGER_ADDRESS}
+
+
+# The network password shared between all the nodes on
+# the network.
+
+network_password=${NETWORK_PASSWORD}
+
+
+# The maximum size of the transaction write cache. This
+# cache is created when data is written to the
+# transaction. This is the maximum amount of data that
+# is stored in the JVM before a network flush happens.
+
+transaction_cache_size = ${TRANSACTION_CACHE_SIZE}
+
+
+# The global cache size used by the client. This cache
+# is used to cache all data read and written by the
+# client and is shared by all instances in the JVM.
+
+global_cache_size = ${GLOBAL_CACHE_SIZE}
