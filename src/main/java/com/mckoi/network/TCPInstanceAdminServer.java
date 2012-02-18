@@ -120,6 +120,12 @@ public class TCPInstanceAdminServer implements Runnable {
   private LocalFileSystemManagerServer manager_server;
   private LocalFileSystemRootServer root_server;
 
+  /**
+   * For managing startup notification.
+   */
+  private final Object startup_lock = new Object();
+  private boolean instance_started = false;
+  
 
   /**
    * Constructs the instance server.
@@ -134,7 +140,7 @@ public class TCPInstanceAdminServer implements Runnable {
     // Set the log level,
     String val = node_properties.getProperty("log_level");
     if (val != null) {
-      this.log.setLevel(Level.parse(val.toUpperCase(Locale.ENGLISH)));
+      log.setLevel(Level.parse(val.toUpperCase(Locale.ENGLISH)));
     }
 
     // Logging directory,
@@ -143,7 +149,7 @@ public class TCPInstanceAdminServer implements Runnable {
       // Set a log directory,
       File f = new File(val.trim());
       if (!f.exists()) {
-        f.mkdir();
+        f.mkdirs();
       }
       if (!f.isDirectory()) {
         throw new RuntimeException("\"log_directory\" value is not a directory.");
@@ -158,7 +164,13 @@ public class TCPInstanceAdminServer implements Runnable {
       // Output to the log file,
       FileHandler fhandler = new FileHandler(val, true);
       fhandler.setFormatter(new SimpleFormatter());
-      this.log.addHandler(fhandler);
+      log.addHandler(fhandler);
+      // Disable using parent handlers for log (disables logging to system.err)
+      if (node_properties.getProperty("log_use_parent_handlers",
+                                      "yes").equals("no")) {
+        log.setUseParentHandlers(false);
+      }
+
     }
 
     this.config_file = config_file;
@@ -195,7 +207,7 @@ public class TCPInstanceAdminServer implements Runnable {
     else {
       File f = new File(val.trim());
       if (!f.exists()) {
-        f.mkdir();
+        f.mkdirs();
       }
       if (!f.isDirectory()) {
         log.log(Level.SEVERE, "\"node_directory\" value is not a directory.");
@@ -260,7 +272,7 @@ public class TCPInstanceAdminServer implements Runnable {
     // Start the services,
     synchronized (server_manager_lock) {
       if (!base_path.exists()) {
-        base_path.mkdir();
+        base_path.mkdirs();
       }
       if (service_type.equals("block_server")) {
         if (block_server == null) {
@@ -375,6 +387,21 @@ public class TCPInstanceAdminServer implements Runnable {
   }
 
   /**
+   * If this service isn't started, blocks until the service is started and
+   * accepting incoming connections. Returns immediately if started.
+   */
+  public void waitUntilStarted() {
+    synchronized (startup_lock) {
+      while (!instance_started) {
+        try {
+          startup_lock.wait();
+        }
+        catch (InterruptedException e) { /* ignore */ }
+      }
+    }
+  }
+
+  /**
    * Runs the tcp instance service, blocking until the server is killed or a
    * critical stop condition is encountered with one of the services running
    * in the JVM.
@@ -431,6 +458,13 @@ public class TCPInstanceAdminServer implements Runnable {
               new Object[] { bind_interface.getHostAddress(), port });
 
       try {
+        
+        // Set the 'instance_started' flag.
+        synchronized (startup_lock) {
+          instance_started = true;
+          startup_lock.notifyAll();
+        }
+
         while (true) {
           // The socket to run the server,
           Socket s = socket.accept();
@@ -462,46 +496,60 @@ public class TCPInstanceAdminServer implements Runnable {
 
     }
     finally {
-      this.timer.cancel();
-      // Shut down the thread pool,
-      this.thread_pool.shutdown();
 
-      synchronized (connection_list) {
-        for (Connection c : connection_list) {
-          try {
-            // If the socket isn't closed, close it
-            if (!c.s.isClosed()) {
-              c.s.close();
+      try {
+        this.timer.cancel();
+        // Shut down the thread pool,
+        this.thread_pool.shutdown();
+
+        synchronized (connection_list) {
+          for (Connection c : connection_list) {
+            try {
+              // If the socket isn't closed, close it
+              if (!c.s.isClosed()) {
+                c.s.close();
+              }
+            }
+            catch (IOException e) {
+              // Ignore
             }
           }
-          catch (IOException e) {
-            // Ignore
+        }
+
+        // Stop services as necessary,
+        File check_file;
+        check_file = new File(base_path, BLOCK_RUN_FILE);
+        if (check_file.exists() && block_server != null) {
+          block_server.stop();
+          block_server = null;
+        }
+        try {
+          check_file = new File(base_path, MANAGER_RUN_FILE);
+          if (check_file.exists() && manager_server != null) {
+            manager_server.stop();
+            manager_server = null;
           }
         }
+        catch (IOException e) {
+          log.log(Level.SEVERE, "IO Error when stopping services", e);
+        }
+        check_file = new File(base_path, ROOT_RUN_FILE);
+        if (check_file.exists() && root_server != null) {
+          root_server.stop();
+          root_server = null;
+        }
+
+      }
+      finally {
+      
+        // Reset the 'instance_started' flag.
+        synchronized (startup_lock) {
+          instance_started = false;
+          startup_lock.notifyAll();
+        }
+
       }
 
-      // Stop services as necessary,
-      File check_file;
-      check_file = new File(base_path, BLOCK_RUN_FILE);
-      if (check_file.exists() && block_server != null) {
-        block_server.stop();
-        block_server = null;
-      }
-      try {
-        check_file = new File(base_path, MANAGER_RUN_FILE);
-        if (check_file.exists() && manager_server != null) {
-          manager_server.stop();
-          manager_server = null;
-        }
-      }
-      catch (IOException e) {
-        log.log(Level.SEVERE, "IO Error when stopping services", e);
-      }
-      check_file = new File(base_path, ROOT_RUN_FILE);
-      if (check_file.exists() && root_server != null) {
-        root_server.stop();
-        root_server = null;
-      }
     }
   }
   
@@ -745,7 +793,8 @@ public class TCPInstanceAdminServer implements Runnable {
       }
       catch (IOException e) {
         if (e instanceof SocketException &&
-            e.getMessage().equals("Connection reset")) {
+            (e.getMessage().equals("Connection reset") ||
+             e.getMessage().equals("socket closed") )) {
           // Ignore connection reset messages,
         }
         else if (e instanceof EOFException) {
