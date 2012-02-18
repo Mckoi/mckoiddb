@@ -25,28 +25,21 @@
 
 package com.mckoi.runtime;
 
-import com.mckoi.network.TCPInstanceAdminServer;
 import com.mckoi.network.NetworkConfigResource;
 import com.mckoi.network.ServiceAddress;
+import com.mckoi.network.TCPInstanceAdminServer;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Properties;
 import java.io.File;
-import java.io.IOException;
 import java.io.FileReader;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.UIManager;
+import java.util.Properties;
 import javax.swing.UIManager.LookAndFeelInfo;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.swing.*;
 
 /**
  * A runtime class that starts a MckoiDDB simluation of a Mckoi distributed
@@ -70,7 +63,7 @@ public class MckoiNetworkSimulation {
 
     boolean failure = false;
     String fail_msg = "";
-    File prop_file = null;
+    File prop_file;
     // If the number of arguments is not correct,
     if (args.length != 1) {
       failure = true;
@@ -330,13 +323,16 @@ public class MckoiNetworkSimulation {
 
     // Create a config resource for this simulation,
     NetworkConfigResource config_resource = new NetworkConfigResource() {
+      @Override
       protected long getLastModifiedTime() throws IOException {
         // This config resource never changes,
         return 90000;
       }
+      @Override
       protected void loadResource() throws IOException {
         // Nothing to load, we have the info we need
       }
+      @Override
       protected Properties refreshNodeProperties() throws IOException {
         return config_properties;
       }
@@ -510,6 +506,7 @@ public class MckoiNetworkSimulation {
       start_button.setEnabled(false);
 
       start_button.addActionListener(new ActionListener() {
+        @Override
         public void actionPerformed(ActionEvent evt) {
           start_button.setEnabled(false);
           stop_button.setEnabled(true);
@@ -524,6 +521,7 @@ public class MckoiNetworkSimulation {
         }
       });
       stop_button.addActionListener(new ActionListener() {
+        @Override
         public void actionPerformed(ActionEvent evt) {
           stop_button.setEnabled(false);
           start_button.setEnabled(true);
