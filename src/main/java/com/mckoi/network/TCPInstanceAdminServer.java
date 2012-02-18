@@ -27,15 +27,11 @@ package com.mckoi.network;
 
 import com.mckoi.util.AnalyticsHistory;
 import java.io.*;
-import java.net.*;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.FileHandler;
@@ -353,6 +349,7 @@ public class TCPInstanceAdminServer implements Runnable {
    * A timed task that updates the network configuration.
    */
   private TimerTask config_update_task = new TimerTask() {
+    @Override
     public void run() {
       try {
         config_file.load();
@@ -382,6 +379,7 @@ public class TCPInstanceAdminServer implements Runnable {
    * critical stop condition is encountered with one of the services running
    * in the JVM.
    */
+  @Override
   public void run() {
     // The timer thread,
     this.timer = new ExceptionCatchingTimer(true);
@@ -632,9 +630,10 @@ public class TCPInstanceAdminServer implements Runnable {
     /**
      * The connection process loop.
      */
+    @Override
     public void run() {
-      InputStream socket_in = null;
-      OutputStream socket_out = null;
+      InputStream socket_in;
+      OutputStream socket_out;
       try {
 
         synchronized (connection_list) {
@@ -833,6 +832,7 @@ public class TCPInstanceAdminServer implements Runnable {
       return fallthrough.scheduledExecutionTime();
     }
 
+    @Override
     public void run() {
       try {
         fallthrough.run();
