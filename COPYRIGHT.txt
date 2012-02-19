@@ -1,0 +1,3 @@
+MckoiDDB Version 1.3 Copyright 2009-2012 Diehl and Associates, Inc.
+MckoiDDB includes code from Mckoi SQL database version 2.0
+  Copyright 2001-2007 Diehl and Associates, Inc.
