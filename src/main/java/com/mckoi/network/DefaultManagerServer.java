@@ -376,22 +376,6 @@ public abstract class DefaultManagerServer {
         // Gets the current block id being allocated against in this manager,
         BlockId block_id = getCurrentBlockIdAlloc();
 
-//        // Ask the manager cluster for the last block id
-//        BlockId block_id = manager_db.getLastBlockId();
-//        if (block_id == null) {
-//          // Initial state when the server map is empty,
-//          long nl = (256L & 0x0FFFFFFFFFFFFFF00L);
-//          nl += getUniqueManagerID();
-//          block_id = new BlockId(0, nl);
-//        }
-//        else {
-//          block_id = block_id.add(1024);
-//          // Clear the lower 8 bits and put the manager unique id there
-//          long nl = (block_id.getLowLong() & 0x0FFFFFFFFFFFFFF00L);
-//          nl += getUniqueManagerID();
-//          block_id = new BlockId(block_id.getHighLong(), nl);
-//        }
-
         // Set the current address end,
         current_block_id_servers = allocateNewBlock(block_id);
         current_address_space_end = new DataAddress(block_id, 0);
@@ -1386,7 +1370,8 @@ public abstract class DefaultManagerServer {
   /**
    * Assigns the servers that will hold the given block id, updates the
    * internal database, and synchronizes the information with other manager
-   * servers on the network.
+   * servers on the network. Will return an empty server list if there are
+   * no block servers.
    * <p>
    * NOTE: This must happen when synchronized on 'allocation_lock'.
    */
@@ -1398,7 +1383,7 @@ public abstract class DefaultManagerServer {
       // new block being allocated against is. This notifies them that they
       // can perform maintenance on all blocks preceding, such as compression.
       final long[] block_servers_notify = current_block_id_servers;
-      if (block_servers_notify != null) {
+      if (block_servers_notify != null && block_servers_notify.length > 0) {
         timer.schedule(new TimerTask() {
           @Override
           public void run() {
@@ -1414,18 +1399,14 @@ public abstract class DefaultManagerServer {
                                      "Block already allocated: " + block_id);
       }
 
-      // Allocate a group of servers from the poll of block servers for the
+      // Allocate a group of servers from the pool of block servers for the
       // given block_id
       long[] servers = allocateOnlineServerNodesForBlock(block_id);
 
-      // If no servers allocated,
-      if (servers.length == 0) {
-        throw new RuntimeException(
-                    "Unable to assign block servesr for block: " + block_id);
+      // Update the database if we have servers to allocate the block id,
+      if (servers.length > 0) {
+        manager_db.setBlockIdServerMap(block_id, servers);
       }
-
-      // Update the database,
-      manager_db.setBlockIdServerMap(block_id, servers);
 
       // Return the list,
       return servers;
@@ -1513,34 +1494,6 @@ public abstract class DefaultManagerServer {
 
   }
 
-//  /**
-//   * Given a block id, returns the list of server_guids that contain the block.
-//   * Note that the server_guids may not reference servers that are currently
-//   * registered with the block manager (eg. if the server instance failed).
-//   * This is a useful function for diagnostics.
-//   */
-//  private long[] getServerGUIDList(BlockId block_id) {
-//
-//
-//
-//    // PENDING
-//    throw new RuntimeException("PENDING");
-//
-//  }
-
-//  /**
-//   * The delegate function for finding the servers assigned to the block. This
-//   * performs a straight lookup in the local database. If the block map is not
-//   * found locally, an empty array is returned.
-//   */
-//  private long[] delegateGetServerList(BlockId block_id) {
-//
-//    // PENDING
-//    throw new RuntimeException("PENDING");
-//
-//  }
-
-
 
 
   /**
@@ -1565,12 +1518,14 @@ public abstract class DefaultManagerServer {
     }
 
     // Set the new list
-    long[] new_server_guids = new long[server_list.size()];
-    for (int i = 0; i < server_list.size(); ++i) {
-      new_server_guids[i] = server_list.get(i);
-    }
+    if (!server_list.isEmpty()) {
+      long[] new_server_guids = new long[server_list.size()];
+      for (int i = 0; i < server_list.size(); ++i) {
+        new_server_guids[i] = server_list.get(i);
+      }
 
-    manager_db.setBlockIdServerMap(block_id, new_server_guids);
+      manager_db.setBlockIdServerMap(block_id, new_server_guids);
+    }
 
   }
 
@@ -1672,76 +1627,6 @@ public abstract class DefaultManagerServer {
       }
 
     }
-
-
-
-//    // If the failure report is on a block server that is servicing allocation
-//    // requests, we push the allocation requests to the next block.
-//    final BlockId current_block_id;
-//    synchronized (allocation_lock) {
-//      current_block_id = current_address_space_end.getBlockId();
-//    }
-//    long[] bservers = queryBlockServersWithBlock(current_block_id);
-////    boolean allocating_on_failed = false;
-//    int ok_server_count = 0;
-//
-//
-//    synchronized (block_servers_map) {
-//      // For each server that stores the block,
-//      for (int i = 0; i < bservers.length; ++i) {
-//        long server_guid = bservers[i];
-//        // Is the status of this server UP?
-//        for (MSBlockServer block_server : block_servers_list) {
-//          // If this matches the guid, and is up, we add to 'ok_server_count'
-//          if (block_server.server_guid == server_guid &&
-//              service_tracker.isServiceUp(block_server.address, "block")) {
-//            ++ok_server_count;
-//          }
-//        }
-//      }
-//
-////      // Get the MSBlockServer object from the map,
-////      for (MSBlockServer block_server : block_servers_list) {
-////        // If the server is up,
-////        if (block_server.current_status.equals(STATUS_UP)) {
-////          // Is it in the list of current servers?
-////          long failed_guid = block_server.server_guid;
-////          for (int i = 0; i < bservers.length; ++i) {
-////            // If the down server is currently being allocated against, we
-////            // set the 'allocating_on_failed' to true.
-////            if (bservers[i] == failed_guid) {
-////              allocating_on_failed = true;
-////            }
-////          }
-////        }
-////      }
-//    }
-//
-//    // If the count of ok servers for the allocation set size is not
-//    // the same then there are one or more servers that are inoperable
-//    // in the allocation set. So, we increment the block id ref of
-//    // 'current_address_space_end' by 1 to force a reevaluation of the
-//    // servers to allocate the current block.
-//    if (ok_server_count != bservers.length) {
-//      boolean next_block = false;
-//      BlockId block_id = null;
-//      synchronized (allocation_lock) {
-//        block_id = current_address_space_end.getBlockId();
-//        int data_id = current_address_space_end.getDataId();
-//        if (current_block_id.equals(block_id)) {
-//          block_id = block_id.add(256);
-//          data_id = 0;
-//          current_address_space_end = new DataAddress(block_id, data_id);
-//          next_block = true;
-//        }
-//
-//        // Allocate a new block (happens under 'allocation_lock')
-//        if (next_block) {
-//          current_block_id_servers = allocateNewBlock(block_id);
-//        }
-//      }
-//
-//    }
 
   }
 
@@ -2273,13 +2158,6 @@ public abstract class DefaultManagerServer {
       log.log(Level.FINER, "getServersInfo replied {0} for {1}",
                           new Object[] { reply.length, block_id.toString() });
 
-
-//      MSBlockServer[] reply = new MSBlockServer[sz];
-//      for (int i = 0; i < sz; ++i) {
-//        MSBlockServer server = getServerInfo(server_ids[i]);
-//        reply[i] = server;
-//      }
-
       return reply;
     }
 
@@ -2331,7 +2209,11 @@ public abstract class DefaultManagerServer {
         // sync the block allocation with the other managers.
 
         if (next_block) {
-          current_block_id_servers = allocateNewBlock(next_block_id);
+          long[] next_block_id_servers = allocateNewBlock(next_block_id);
+          if (next_block_id_servers.length == 0) {
+            throw new RuntimeException("No block servers available.");
+          }
+          current_block_id_servers = next_block_id_servers;
         }
 
         // Update the address space end,

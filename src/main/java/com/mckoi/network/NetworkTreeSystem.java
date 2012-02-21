@@ -866,7 +866,7 @@ interface_loop:
     }
 
     // If there are no 'none_cached' blocks,
-    if (none_cached.size() == 0) {
+    if (none_cached.isEmpty()) {
       // Return the result,
       return result_map;
     }
