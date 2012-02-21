@@ -61,6 +61,7 @@ public class AdminConsole {
 
     String network_conf_arg = null;
     String network_pass_arg = null;
+    boolean no_console = false;
 
     StringWriter wout = new StringWriter();
     PrintWriter pout = new PrintWriter(wout);
@@ -70,6 +71,7 @@ public class AdminConsole {
     try {
       network_conf_arg = command_line.switchArgument("-netconfig", "network.conf");
       network_pass_arg = command_line.switchArgument("-netpassword");
+      no_console = command_line.containsSwitch("-noconsole");
     }
     catch (Throwable e) {
       pout.println("Error parsing arguments.");
@@ -108,7 +110,7 @@ public class AdminConsole {
       Writer w;
       Console console = System.console();
       boolean display_prompt;
-      if (console != null) {
+      if (!no_console && console != null) {
         r = console.reader();
         w = console.writer();
         display_prompt = true;

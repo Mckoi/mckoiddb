@@ -402,6 +402,22 @@ public class TCPInstanceAdminServer implements Runnable {
   }
 
   /**
+   * If this service is started, blocks until the service is stopped and
+   * no longer accepting incoming connections. Returns immediately if stopped.
+   */
+  public void waitUntilStopped() {
+    synchronized (startup_lock) {
+      while (instance_started) {
+        try {
+          startup_lock.wait();
+        }
+        catch (InterruptedException e) { /* ignore */ }
+      }
+    }
+  }
+  
+  
+  /**
    * Runs the tcp instance service, blocking until the server is killed or a
    * critical stop condition is encountered with one of the services running
    * in the JVM.
@@ -539,6 +555,9 @@ public class TCPInstanceAdminServer implements Runnable {
           root_server = null;
         }
 
+      }
+      catch (Exception e) {
+        e.printStackTrace(System.err);
       }
       finally {
       

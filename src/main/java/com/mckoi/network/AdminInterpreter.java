@@ -345,6 +345,7 @@ public class AdminInterpreter {
     }
     catch (NetworkAdminException e) {
       out.print("Error retrieving stats: " + e.getMessage());
+      e.printAdminError(out);
     }
     out.println();
     out.println();
@@ -1278,6 +1279,23 @@ public class AdminInterpreter {
   }
 
 
+  /**
+   * Waits for a time span before interpreting new commands. Useful for some
+   * scripting events.
+   */
+  public void waitMS(String time_ms) {
+    try {
+      int wait_period = Integer.parseInt(time_ms);
+      out.println("Waiting for " + wait_period + " ms.");
+      Thread.sleep(wait_period);
+    }
+    catch (Exception e) {
+      out.println("Error: " + e.getMessage());
+      out.flush();
+    }
+  }
+  
+  
 
   private void rollbackPathToTime(String path_name, long timestamp)
                                     throws NetworkAdminException, IOException {
@@ -1546,6 +1564,10 @@ public class AdminInterpreter {
         locatePath(args[0]);
       }
 
+      else if (match(lccmd, "wait\\s+(\\S+)")) {
+        waitMS(args[0]);
+      }
+      
       else {
         out.println("Unknown command (use 'help' for a list of commands).");
       }
@@ -1556,7 +1578,7 @@ public class AdminInterpreter {
     }
     catch (NetworkAdminException e) {
       out.println("Error: " + e.getMessage());
-//      e.printStackTrace(out);
+      e.printAdminError(out);
       out.println("Operation aborted.");
     }
 

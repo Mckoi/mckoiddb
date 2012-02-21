@@ -497,7 +497,7 @@ public class NetworkProfile {
       Message m = commandManager(manager_server, msg_out);
       if (m.isError()) {
         if (!isConnectionFailure(m)) {
-          throw new NetworkAdminException(m.getErrorMessage());
+          throw new NetworkAdminException(m);
         }
         last_error = m;
       }
@@ -507,7 +507,7 @@ public class NetworkProfile {
     }
     // All managers failed,
     if (!success) {
-      throw new NetworkAdminException(last_error.getErrorMessage());
+      throw new NetworkAdminException(last_error);
     }
 
   }
@@ -533,7 +533,7 @@ public class NetworkProfile {
       Message m = commandManager(manager_server, msg_out);
       if (m.isError()) {
         if (!isConnectionFailure(m)) {
-          throw new NetworkAdminException(m.getErrorMessage());
+          throw new NetworkAdminException(m);
         }
         last_error = m;
       }
@@ -543,7 +543,7 @@ public class NetworkProfile {
     }
 
     // All managers failed,
-    throw new NetworkAdminException(last_error.getErrorMessage());
+    throw new NetworkAdminException(last_error);
 
   }
 
@@ -572,7 +572,7 @@ public class NetworkProfile {
       for (Message m : msg_in) {
         if (m.isError()) {
           if (!isConnectionFailure(m)) {
-            throw new NetworkAdminException(m.getErrorMessage());
+            throw new NetworkAdminException(m);
           }
           last_error = m;
         }
@@ -584,7 +584,7 @@ public class NetworkProfile {
 
     // Any one root failed,
     if (success_count != roots.length) {
-      throw new NetworkAdminException(last_error.getErrorMessage());
+      throw new NetworkAdminException(last_error);
     }
   }
 
@@ -609,7 +609,7 @@ public class NetworkProfile {
     for (Message m : msg_in) {
       if (m.isError()) {
         if (!isConnectionFailure(m)) {
-          throw new NetworkAdminException(m.getErrorMessage());
+          throw new NetworkAdminException(m);
         }
         last_error = m;
       }
@@ -620,7 +620,7 @@ public class NetworkProfile {
 
     // Any one root failed,
     if (success_count != 1) {
-      throw new NetworkAdminException(last_error.getErrorMessage());
+      throw new NetworkAdminException(last_error);
     }
   }
 
@@ -670,7 +670,7 @@ public class NetworkProfile {
     Message m = commandAdmin(machine.getServiceAddress(), msg_out);
     if (m.isError()) {
 //      System.out.println(m.getExternalThrowable().getStackTrace());
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
     // Success,
 
@@ -853,7 +853,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
   }
@@ -888,7 +888,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
   }
@@ -923,7 +923,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
 
@@ -959,7 +959,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
 
@@ -995,7 +995,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
   }
@@ -1030,7 +1030,7 @@ public class NetworkProfile {
       Message m =
               commandManager(current_managers[i].getServiceAddress(), msg_out);
       if (m.isError()) {
-        throw new NetworkAdminException(m.getErrorMessage());
+        throw new NetworkAdminException(m);
       }
     }
   }
@@ -1052,7 +1052,7 @@ public class NetworkProfile {
 //
 //    Message m = commandRoot(root, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //    else {
 //      String[] paths = (String[]) m.param(0);
@@ -1195,7 +1195,7 @@ public class NetworkProfile {
 //
 //    Message m = commandRoot(root, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //
 //    msg_out = new MessageStream(12);
@@ -1205,7 +1205,7 @@ public class NetworkProfile {
 //
 //    m = commandRoot(root, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //    else {
 //      // Tell the manager servers about this path,
@@ -1231,7 +1231,7 @@ public class NetworkProfile {
 //      }
 //      // All managers failed,
 //      if (!success) {
-//        throw new NetworkAdminException(last_error.getErrorMessage());
+//        throw new NetworkAdminException(last_error);
 //      }
 //    }
 //
@@ -1271,7 +1271,7 @@ public class NetworkProfile {
 //
 //    Message m = commandRoot(root, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //    else {
 //      // Tell the manager servers about this path,
@@ -1297,7 +1297,7 @@ public class NetworkProfile {
 //      }
 //      // All managers failed,
 //      if (!success) {
-//        throw new NetworkAdminException(last_error.getErrorMessage());
+//        throw new NetworkAdminException(last_error);
 //      }
 //    }
 //
@@ -1326,7 +1326,7 @@ public class NetworkProfile {
 //
 //    Message m = commandManager(manager_server, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //
 //    // Return the service address for the root server,
@@ -1363,7 +1363,7 @@ public class NetworkProfile {
 
     Message m = commandRoot(root, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     // Return the data address array,
@@ -1396,7 +1396,7 @@ public class NetworkProfile {
 
     Message m = commandRoot(root, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
   }
@@ -1426,7 +1426,7 @@ public class NetworkProfile {
 
     Message m = commandRoot(root_leader, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     // Return the stats string for this path
@@ -1454,7 +1454,7 @@ public class NetworkProfile {
 
     Message m = commandBlock(block, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     // Return the GUID
@@ -1487,7 +1487,7 @@ public class NetworkProfile {
 
     Message m = commandManager(manager_server, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     int count = (Integer) m.param(0);
@@ -1521,7 +1521,7 @@ public class NetworkProfile {
 //
 //    Message m = commandManager(manager_server, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //
 //    // Return the service address for the root server,
@@ -1552,7 +1552,7 @@ public class NetworkProfile {
 //
 //    Message m = commandManager(manager_server, msg_out);
 //    if (m.isError()) {
-//      throw new NetworkAdminException(m.getErrorMessage());
+//      throw new NetworkAdminException(m);
 //    }
 //
 //    // Return the service address for the root server,
@@ -1583,7 +1583,7 @@ public class NetworkProfile {
 
     Message m = commandManager(manager_server, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     // The list of block servers registered with the manager,
@@ -1637,7 +1637,7 @@ public class NetworkProfile {
       else success = true;
     }
     if (!success) {
-      throw new NetworkAdminException(last_error.getErrorMessage());
+      throw new NetworkAdminException(last_error);
     }
   }
 
@@ -1679,7 +1679,7 @@ public class NetworkProfile {
       else success = true;
     }
     if (!success) {
-      throw new NetworkAdminException(last_error.getErrorMessage());
+      throw new NetworkAdminException(last_error);
     }
   }
 
@@ -1705,7 +1705,7 @@ public class NetworkProfile {
 
     Message m = commandBlock(block, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     // Return the block list,
@@ -1725,7 +1725,7 @@ public class NetworkProfile {
     msg_out.closeMessage();
     Message m = commandAdmin(server, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     long[] stats = (long[]) m.param(0);
@@ -1767,7 +1767,7 @@ public class NetworkProfile {
 
     Message m = commandBlock(source_block_server, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
   }
@@ -1785,7 +1785,7 @@ public class NetworkProfile {
 
     Message m = commandManager(manager_server, msg_out);
     if (m.isError()) {
-      throw new NetworkAdminException(m.getErrorMessage());
+      throw new NetworkAdminException(m);
     }
 
     return (String) m.param(0);

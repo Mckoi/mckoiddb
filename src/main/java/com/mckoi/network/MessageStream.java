@@ -402,9 +402,13 @@ public class MessageStream implements Iterable<Message>, ProcessResult {
       else if (msg instanceof ExternalThrowable) {
         dout.writeByte(10);
         ExternalThrowable e = (ExternalThrowable) msg;
-        dout.writeUTF(e.getClassName());
-        dout.writeUTF(e.getMessage());
-        dout.writeUTF(e.getStackTrace());
+        String classname = e.getClassName();
+        String message = e.getMessage();
+        String stack_trace = e.getStackTrace();
+        
+        dout.writeUTF(classname == null ? "" : classname);
+        dout.writeUTF(message == null ? "" : message);
+        dout.writeUTF(stack_trace == null ? "" : stack_trace);
       }
       else if (msg instanceof ServiceAddress[]) {
         dout.writeByte(11);

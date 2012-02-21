@@ -155,15 +155,15 @@ public class QuickConfigTool {
       host = null;
     }
 
-    String host_arg;
-    if (this_host_string != null) {
-      host_arg = this_host_string + " ";
-    }
-    else {
-      host_arg = "";
-    }
-    System.out.println("Machine Node, " + host_arg +
-                        "port: " + port);
+//    String host_arg;
+//    if (this_host_string != null) {
+//      host_arg = this_host_string + " ";
+//    }
+//    else {
+//      host_arg = "";
+//    }
+//    System.out.println("Machine Node, " + host_arg +
+//                        "port: " + port);
 
     // Disable logging to system.err
     node_config_properties.setProperty("log_use_parent_handlers", "no");
@@ -285,6 +285,7 @@ public class QuickConfigTool {
     finally {
       // Close the server,
       inst.close();
+      inst.waitUntilStopped();
     }
 
   }

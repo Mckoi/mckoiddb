@@ -343,13 +343,16 @@ public class LocalFileSystemRootServer {
         int sz = addresses.length;
         manager_servers = new ServiceAddress[sz];
         for (int i = 0; i < sz; ++i) {
-          manager_servers[i] = ServiceAddress.parseString(addresses[i]);
+          String address_string = addresses[i].trim();
+          if (address_string.length() > 0) {
+            manager_servers[i] = ServiceAddress.parseString(addresses[i]);
+          }
         }
       }
 
     }
     catch (IOException e) {
-      throw new RuntimeException("IO Error: " + e.getMessage());
+      throw new RuntimeException("IO Error: " + e.getMessage(), e);
     }
 
     // Adds all the files to the path info queue,
@@ -1796,9 +1799,11 @@ public class LocalFileSystemRootServer {
     private void checkIsSynchronized() {
       synchronized (access_lock) {
         if (!complete_and_synchronized) {
+          String path_info_name =
+                  (path_info == null) ? path_name : path_info.getPathName();
           throw new RuntimeException(MessageFormat.format(
                   "Path {0} on root server {1} is not available",
-                  path_info.getPathName(), this_service.displayString()));
+                  path_info_name, this_service.displayString()));
         }
       }
     }
