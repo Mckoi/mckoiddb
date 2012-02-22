@@ -6,7 +6,7 @@
   <groupId>com.mckoi</groupId>
   <artifactId>MckoiDDB</artifactId>
   <packaging>jar</packaging>
-  <version>1.3</version>
+  <version>1.4-dev</version>
   <name>MckoiDDB</name>
 
   <url>http://maven.apache.org</url>
