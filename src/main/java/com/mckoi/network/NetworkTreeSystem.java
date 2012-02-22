@@ -1695,80 +1695,84 @@ interface_loop:
 
 
   
-  
-  private final Object reachability_lock = new Object();
-  private int reachability_tree_depth;
 
-  private void doReachCheck(PrintWriter warning_log,
-                            NodeReference node,
-                            OrderedList64Bit node_list,
+  /**
+   * Private static object used in the reachability check.
+   */
+  private static class ReachabilityProperties {
+    private int known_tree_depth = -1;
+  }
+
+
+  /**
+   * Recursive method for doing the reachability determination.
+   */
+  private void doReachCheck(ReachabilityProperties properties,
+                            PrintWriter warning_log,
+                            NodeReference node_ref,
+                            DiscoveredNodeSet node_set,
                             int cur_depth) throws IOException {
 
-    throw new RuntimeException("PENDING");
+    // Try and add the node to the node set,
+    boolean added = node_set.add(node_ref);
 
-//    // Is the node in the list?
-//    boolean inserted = node_list.insertUnique(new Long(node), node,
-//                                              OrderedList64Bit.KEY_COMPARATOR);
-//
-//    if (inserted) {
-//      // Fetch the node,
-//      try {
-//        TreeNode tree_node = fetchNode(new NodeReference[] { node })[0];
-//        if (tree_node instanceof TreeBranch) {
-//          // Get the child nodes,
-//          TreeBranch branch = (TreeBranch) tree_node;
-//          int children_count = branch.size();
-//          for (int i = 0; i < children_count; ++i) {
-//            NodeReference child_node_ref = branch.getChild(i);
-//            // Recurse,
-//            if (cur_depth + 1 == reachability_tree_depth) {
-//              // It's a known leaf node, so insert now without traversing
-//              node_list.insertUnique(new Long(child_node_ref),
-//                                     child_node_ref,
-//                                     OrderedList64Bit.KEY_COMPARATOR);
-//            }
-//            else {
-//              // Recurse,
-//              doReachCheck(warning_log, child_node_ref,
-//                           node_list, cur_depth + 1);
-//            }
-//          }
-//        }
-//        else if (tree_node instanceof TreeLeaf) {
-//          reachability_tree_depth = cur_depth;
-//        }
-//        else {
-//          throw new IOException("Unknown node class: " + tree_node);
-//        }
-//      }
-//      catch (InvalidDataState e) {
-//        // Report the error,
-//        warning_log.println("Invalid Data Set (msg: " + e.getMessage() + ")");
-//        warning_log.println("Block: " + e.getAddress().getBlockId());
-//        warning_log.println("Data:  " + e.getAddress().getDataId());
-//      }
-//    }
+    if (added) {
+
+      // Fetch the node,
+      TreeNode tree_node = fetchNode(new NodeReference[] { node_ref })[0];
+
+      if (tree_node instanceof TreeBranch) {
+        // Get the child nodes,
+        TreeBranch branch = (TreeBranch) tree_node;
+        int children_count = branch.size();
+        for (int i = 0; i < children_count; ++i) {
+          NodeReference child_node_ref = branch.getChild(i);
+          // Recurse,
+          if (cur_depth + 1 == properties.known_tree_depth) {
+            // It's a known leaf node, so insert now without traversing
+            node_set.add(child_node_ref);
+          }
+          else {
+            // Recurse,
+            doReachCheck(properties,
+                         warning_log, child_node_ref,
+                         node_set, cur_depth + 1);
+          }
+        }
+      }
+      else if (tree_node instanceof TreeLeaf) {
+        properties.known_tree_depth = cur_depth;
+      }
+      else {
+        throw new IOException("Unknown node class: " + tree_node);
+      }
+
+    }
+
   }
 
   /**
    * Traverses a tree from the given root node adding any nodes it discovers
-   * to the sorted set (including the root node). This is used to perform a
+   * to the node set (including the root node). This is used to perform a
    * reachability test to determine the nodes that need to be preserved vs
    * the nodes that are not linked with any root node and therefore can be
    * removed.
    * <p>
    * If this method traverses to a node that's already stored in the list it
    * does not bother to perform the reachability determination on the children.
+   * <p>
+   * The 'DiscoveredNodeSet' object is used to determine if the node has been
+   * visited previously, and if not, to store that the node has been visited.
+   * It is left to the callee to determine the method of persistence for the
+   * node set object.
    */
-  public void createReachabilityList(PrintWriter warning_log,
-                               NodeReference node,
-                               OrderedList64Bit node_list) throws IOException {
+  public void discoverNodesInTree(PrintWriter warning_log,
+                               NodeReference root_node,
+                               DiscoveredNodeSet node_set) throws IOException {
     checkCriticalStop();
 
-    synchronized (reachability_lock) {
-      reachability_tree_depth = -1;
-      doReachCheck(warning_log, node, node_list, 1);
-    }
+    ReachabilityProperties properties = new ReachabilityProperties();
+    doReachCheck(properties, warning_log, root_node, node_set, 1);
 
   }
 

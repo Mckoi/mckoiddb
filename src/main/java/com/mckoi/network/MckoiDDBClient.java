@@ -204,16 +204,20 @@ public abstract class MckoiDDBClient {
   }
 
   /**
-   * Traverses the nodes in a tree recursively adding any nodes that aren't in
-   * the given list into the list (in sorted order). This is used for
-   * reachability determination for garbage collection.
+   * Given a snapshot, traverses the nodes in the snapshot tree adding any
+   * nodes that aren't already in the discovered node set into the set. This
+   * method can be used for reachability determination as part of a garbage
+   * collection function. For reachability determination, you would
+   * incrementally call this method over all the historical roots of the
+   * paths that need to be preserved. The method may also be used for some
+   * diagnostic procedures.
    */
-  public void createReachabilityList(PrintWriter warning_log,
-                                     DataAddress root_node,
-                                     OrderedList64Bit discovered_node_list) {
+  public void discoverNodesInSnapshot(PrintWriter warning_log,
+                                      DataAddress root_node,
+                                      DiscoveredNodeSet discovered_node_set) {
     try {
-      tree_system.createReachabilityList(warning_log,
-                                   root_node.getValue(), discovered_node_list);
+      tree_system.discoverNodesInTree(warning_log,
+                                   root_node.getValue(), discovered_node_set);
     }
     catch (IOException e) {
       throw new RuntimeException("IO Error: " + e.getMessage());
