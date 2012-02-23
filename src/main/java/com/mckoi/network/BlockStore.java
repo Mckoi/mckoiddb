@@ -38,7 +38,7 @@ interface BlockStore {
 
   /**
    * Opens the block store. Returns true if a new object has to be created,
-   * false if we openned an existing archive.
+   * false if we opened an existing archive.
    */
   boolean open() throws IOException;
 
@@ -65,7 +65,7 @@ interface BlockStore {
    * node item for node data that was allocated but not written to.
    * <p>
    * The data_id will be found within the set of nodes returned in the NodeSet.
-   * It will not necessarily be found in a predictible position in the returned
+   * It will not necessarily be found in a predictable position in the returned
    * set. The items in the node set must be iterated through to find the
    * requested data item.
    * <p>
@@ -73,6 +73,13 @@ interface BlockStore {
    * exception but it is not required to do so.
    */
   NodeSet getData(int data_id) throws IOException;
+
+  /**
+   * Returns the maximum extent of data_ids stored in this block store. If
+   * this is block store that can be written to, and therefore the extent
+   * can not be known, an exception is generated.
+   */
+  int getMaxDataId() throws IOException;
 
   /**
    * Removes the data with the given data_id stored within this block. This

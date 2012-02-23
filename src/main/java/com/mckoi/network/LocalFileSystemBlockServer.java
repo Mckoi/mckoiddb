@@ -479,6 +479,7 @@ public class LocalFileSystemBlockServer {
       if (!blocks_pending_sync.contains(container)) {
         blocks_pending_sync.addFirst(container);
         event_timer.schedule(new TimerTask() {
+          @Override
           public void run() {
             synchronized (path_lock) {
               blocks_pending_sync.remove(container);
@@ -688,6 +689,202 @@ public class LocalFileSystemBlockServer {
   }
 
   /**
+   * Notifies this block server that the given nodes in the block must be
+   * preserved, and any nodes in the block not in the node array may be
+   * reclaimed at some point. This is a resource reclamation function used
+   * by the garbage collector to free up resources.
+   * <p>
+   * This implementation will make a backup of the existing block and then
+   * rewrite the block with the given node set preserved. This method will
+   * make a reasonable attempt to clean up the block however it may not
+   * perform the operation for the following reasons;
+   * <p>
+   * 1. There are not enough nodes being reclaimed in the block to make it
+   *  worthwhile.
+   * <p>
+   * 2. The block has recently had a garbage collection operation performed on
+   *  it.
+   * <p>
+   * 3. The block was updated too recently.
+   * <p>
+   * This method will return immediately and schedule the resource reclamation
+   * for a later time. Returns the process_id of the background task or -1
+   * if the process was not scheduled.
+   */
+  private long preserveNodesInBlock(
+                           final BlockId block_id, final DataAddress[] nodes) {
+    synchronized (process_lock) {
+      long process_id = process_id_seq;
+      process_id_seq = process_id_seq + 1;
+      // Schedule the process to happen within a second.
+      event_timer.schedule(new TimerTask() {
+        @Override
+        public void run() {
+          doBlockRewrite(block_id, nodes);
+        }
+      }, 1000);
+      return process_id;
+    }
+  }
+
+  /**
+   * Rewrites the nodes in the block preserving the given nodes in the block
+   * and deleting any nodes that are in the block but not in the given array.
+   */
+  private void doBlockRewrite(BlockId block_id,
+                              DataAddress[] nodes_to_preserve) {
+    
+    BlockContainer block_container = null;
+    try {
+
+      // Fetch the block container,
+      block_container = fetchBlockContainer(block_id);
+
+      // If the block container is not compressed then fail,
+      if (!block_container.isCompressed()) {
+        // FAIL;
+        log.log(Level.WARNING,
+                "Failed block rewrite because source block is not compressed.");
+        return;
+      }
+
+      int[] data_id_arr = new int[nodes_to_preserve.length];
+
+      int i = 0;
+      // For each node being preserved,
+      for (DataAddress address : nodes_to_preserve) {
+        // The block being written to,
+        BlockId node_block_id = address.getBlockId();
+        // The data identifier,
+        int node_data_id = address.getDataId();
+        // Check the block id is the same,
+        if (!block_id.equals(node_block_id)) {
+          // FAIL;
+          log.log(Level.WARNING,
+                  "Failed block rewrite because node to preserve does not have same block id.");
+          return;
+        }
+
+        // Record the node_data_id into a list,
+        data_id_arr[i] = node_data_id;
+        ++i;
+
+      }
+
+      // Sort the data id array,
+      Arrays.sort(data_id_arr);
+      
+      // Check there are no duplicates,
+      int len = data_id_arr.length;
+      int previous_id = -1;
+      for (int n = 0; n < len; ++n) {
+        int data_id = data_id_arr[n];
+        if (data_id == previous_id) {
+          // FAIL;
+          log.log(Level.WARNING,
+                  "Failed block rewrite because duplicate nodes in input node set.");
+          return;
+        }
+        previous_id = data_id;
+      }
+
+      // The file to write to,
+      String block_fname = formatFileName(block_id);
+      File rewrite_file = new File(path, block_fname + ".rew");
+      // Fail if the file exists,
+      if (rewrite_file.exists()) {
+        // FAIL;
+        log.log(Level.WARNING,
+                "Failed block rewrite because file exists: {0}",
+                new Object[] { rewrite_file.getAbsoluteFile() });
+        return;
+      }
+      // The rewrite store,
+      MutableBlockStore block_rewrite_store =
+                                 new MutableBlockStore(block_id, rewrite_file);
+      int nodes_disposed_count = 0;
+      long nodes_disposed_size = 0;
+      try {
+        // Open the rewrite block store,
+        block_rewrite_store.open();
+
+        // Get the maximum data id stored in the container,
+        int max_data_id = block_container.getMaxDataId();
+        // Read through all the blocks,
+        int data_id = 0;
+        while (data_id <= max_data_id) {
+          // Fetch the node,
+          NodeSet node_set = block_container.read(data_id);
+
+          // For each node reference,
+          Iterator<NodeItemBinary> node_items = node_set.getNodeSetItems();
+          while (node_items.hasNext()) {
+            NodeItemBinary bin = node_items.next();
+            DataInputStream in = new DataInputStream(bin.getInputStream());
+            // HACK:
+            // We must use contextual node information here to work out the
+            // size of the node to copy.
+            byte[] node_buf = NetworkTreeSystem.readSingleNodeData(in);
+
+            // Write the node if it's in the preserve list,
+            int in_data_id = new DataAddress(bin.getNodeId()).getDataId();
+            // If the data id of this node is in the data_id_arr set then this
+            // node needs to be preserved.
+            if (Arrays.binarySearch(data_id_arr, in_data_id) >= 0) {
+              block_rewrite_store.putData(data_id, node_buf, 0, node_buf.length);
+            }
+            else {
+              ++nodes_disposed_count;
+              nodes_disposed_size += node_buf.length;
+            }
+
+            ++data_id;
+          }
+
+        }
+      }
+      finally {
+        // Close the block rewrite store,
+        block_rewrite_store.close();
+      }
+
+      // Rewrite done,
+      log.log(Level.INFO,
+              "Node rewrite complete. Nodes disposed = {0}, Rewrite block file = {1}",
+              new Object[] { nodes_disposed_count,
+                             rewrite_file.getAbsoluteFile() });
+
+      // If we disposed less than about 50k of nodes then we don't bother
+      // HACK: This value is very arbitrary!
+      if (nodes_disposed_size < 51200) {
+        // Delete the rewrite file,
+        log.log(Level.SEVERE,
+            "PENDING - Not enough nodes disposed so delete the rewrite block");
+      }
+      // If nodes disposed, push this rewrite file as the new block file and
+      // rename the old.
+      else {
+        log.log(Level.SEVERE,
+            "PENDING - Push the rewritten block file as current.");
+      }
+
+    }
+    catch (IOException e) {
+      log.log(Level.WARNING, "IO Error", e);
+    }
+    // Make sure we close the container,
+    finally {
+      try {
+        block_container.close();
+      }
+      catch (IOException e) {
+        log.log(Level.WARNING, "IOException closing block container", e);
+      }
+    }
+
+  }
+
+  /**
    * Notification generated by a manager server to inform this block server
    * the maximum block being allocated against. This allows the block server
    * to perform maintenance on its block set (such as compression).
@@ -826,6 +1023,7 @@ public class LocalFileSystemBlockServer {
 
                   // Delete the file after 5 minutes,
                   event_timer.schedule(new TimerTask() {
+                    @Override
                     public void run() {
                       log.log(Level.FINE, "Deleting file {0}", sourcef.getName());
                       sourcef.delete();
@@ -953,7 +1151,7 @@ public class LocalFileSystemBlockServer {
     /**
      * Returns the MutableBlockStore backing this block container.
      */
-    BlockStore getBlockStore() {
+    private BlockStore getBlockStore() {
       return block_store;
     }
 
@@ -1025,6 +1223,15 @@ public class LocalFileSystemBlockServer {
     }
 
     /**
+     * Returns the maximum data id stored in the block.
+     */
+    int getMaxDataId() throws IOException {
+      synchronized (this) {
+        return block_store.getMaxDataId();
+      }
+    }
+
+    /**
      * Removes a node from the block store.
      */
     void remove(int data_id) throws IOException {
@@ -1072,6 +1279,7 @@ public class LocalFileSystemBlockServer {
       return block_store.toString();
     }
 
+    @Override
     public int compareTo(Object o) {
       BlockContainer dc = (BlockContainer) o;
       return block_id.compareTo(dc.block_id);
@@ -1130,6 +1338,7 @@ public class LocalFileSystemBlockServer {
     /**
      * {@inheritDoc }
      */
+    @Override
     public MessageStream process(MessageStream message_stream) {
 
       // The map of containers touched,
@@ -1263,6 +1472,16 @@ public class LocalFileSystemBlockServer {
             writeBlockComplete(block_id, file_type);
             reply_message.addMessage("R");
             reply_message.addInteger(1);
+            reply_message.closeMessage();
+          }
+
+          // preserveNodesInBlock(BlockId block_id, DataAddress[] nodes)
+          else if (m.getName().equals("preserveNodesInBlock")) {
+            BlockId block_id = (BlockId) m.param(0);
+            DataAddress[] nodes = (DataAddress[]) m.param(1);
+            long process_id = preserveNodesInBlock(block_id, nodes);
+            reply_message.addMessage("R");
+            reply_message.addLong(process_id);
             reply_message.closeMessage();
           }
 
@@ -1518,9 +1737,10 @@ public class LocalFileSystemBlockServer {
       if (!f.exists()) {
         return;
       }
+      BlockContainer block_container = null;
       try {
 
-        BlockContainer block_container = fetchBlockContainer(block_id);
+        block_container = fetchBlockContainer(block_id);
         // If the block was written to less than 6 minutes ago, we don't allow
         // the copy to happen,
         if (!isKnownStaticBlock(block_container)) {
@@ -1630,8 +1850,16 @@ public class LocalFileSystemBlockServer {
 
       }
       catch (IOException e) {
-        log.log(Level.INFO, "IO Error", e);
-        return;
+        log.log(Level.WARNING, "IO Error", e);
+      }
+      // Make sure we close the container,
+      finally {
+        try {
+          block_container.close();
+        }
+        catch (IOException e) {
+          log.log(Level.WARNING, "IOException closing block container", e);
+        }
       }
 
     }

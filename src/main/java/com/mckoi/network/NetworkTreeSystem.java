@@ -162,6 +162,76 @@ class NetworkTreeSystem implements TreeSystem {
   }
 
   /**
+   * Given a DataInputStream, reads a single node from stream and returns the
+   * byte[] content of the node data. The byte array content is appropriate
+   * for serializing in a block file.
+   * <p>
+   * In addition, this will perform a CRC check on the node data. Also handles
+   * null nodes.
+   */
+  public static byte[] readSingleNodeData(DataInputStream in)
+                                                           throws IOException {
+
+    // Read the node type. It will be either 0 (NULL type), STORE_LEAF_TYPE or
+    // STORE_BRANCH_TYPE.
+    short node_type = in.readShort();
+
+    // The checksum object,
+    CRC32 crc32 = new CRC32();
+    crc32.reset();
+
+    // If it's a null node type (not stored)
+    if (node_type == 0) {
+      // Return empty array
+      return new byte[2];
+    }
+
+    // Read the checksum,
+    short reserved = in.readShort();  // For future use...
+    int checksum = in.readInt();
+    // Read the size
+    int size_int = in.readInt();
+
+    // Work out the content size from the input data,
+    int content_size;
+
+    // Is the node type a leaf node?
+    if (node_type == STORE_LEAF_TYPE) {
+      // Work out the content size,
+      content_size = size_int;
+    }
+    else if (node_type == STORE_BRANCH_TYPE) {
+      // Work out the content size,
+      content_size = size_int * 8;
+    }
+    else {
+      throw new IOException("Unrecognized node type on stream");
+    }
+
+    // The size of the output node,
+    byte[] buf = new byte[12 + content_size];
+
+    // Set the proto header,
+    ByteArrayUtil.setShort(node_type, buf, 0);
+    ByteArrayUtil.setShort(reserved, buf, 2);
+    ByteArrayUtil.setInt(checksum, buf, 4);
+    ByteArrayUtil.setInt(size_int, buf, 8);
+    // Read the content from the stream,
+    in.readFully(buf, 12, content_size);
+
+    // Confirm checksum,
+    crc32.update(buf, 8, content_size + 4);
+    int calc_checksum = (int) crc32.getValue();
+    if (checksum != calc_checksum) {
+      throw new IOException("Checksum failed");
+    }
+
+    // Done,
+    return buf;
+
+  }
+
+  /**
    * Notify all the manager servers, ignoring any errors or connection
    * failures (used for event notification only).
    */
@@ -646,6 +716,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public void checkPoint() {
     // This is a 'no-op' for the network system. This is called when a cache
     // flush occurs, so one idea might be to use this as some sort of hint?
@@ -656,6 +727,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public int getMaxBranchSize() {
     // PENDING: Make this user-definable.
     // Remember though - you can't change this value on the fly so we'll need
@@ -669,6 +741,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public int getMaxLeafByteSize() {
     // PENDING: Make this user-definable.
     // Remember though - you can't change this value on the fly so we'll need
@@ -679,6 +752,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public final void checkCriticalStop() {
     if (critical_stop_error != null) {
       // We wrap the critical stop error a second time to ensure the stack
@@ -691,6 +765,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public final CriticalStopError handleIOException(IOException e) {
     log.log(Level.SEVERE, "Critical stop IO Error", e);
     critical_stop_error = new CriticalStopError(e.getMessage(), e);
@@ -700,6 +775,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public final CriticalStopError handleVMError(VirtualMachineError e) {
 // We don't attempt to log vm errors
 //    log.log(Level.SEVERE, "Critical stop VM Error", e);
@@ -710,6 +786,7 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public long getNodeHeapMaxSize() {
     return max_transaction_node_heap_size;
   }
@@ -943,6 +1020,7 @@ interface_loop:
   /**
    * {@inhericDoc}
    */
+  @Override
   public TreeNode[] fetchNode(NodeReference[] node_refs) {
     // The number of nodes,
     int node_count = node_refs.length;
@@ -1004,7 +1082,7 @@ interface_loop:
     }
 
     // Exit early if no blocks,
-    if (unique_blocks.size() == 0) {
+    if (unique_blocks.isEmpty()) {
       return result_nodes;
     }
 
@@ -1121,8 +1199,12 @@ interface_loop:
                   if (crc32 == null) crc32 = new CRC32();
                   crc32.reset();
 
+                  // If it's a null node type (not stored)
+                  if (node_type == 0) {
+                    // Nothing to do here,
+                  }
                   // Is the node type a leaf node?
-                  if (node_type == STORE_LEAF_TYPE) {
+                  else if (node_type == STORE_LEAF_TYPE) {
                     // Read the checksum,
                     in.readShort();  // For future use...
                     int checksum = in.readInt();
@@ -1359,6 +1441,7 @@ interface_loop:
   /**
    * {@inhericDoc}
    */
+  @Override
   public boolean isNodeAvailableLocally(NodeReference node_ref) {
     // Special node ref,
     if (node_ref.isSpecial()) {
@@ -1661,6 +1744,7 @@ interface_loop:
    * values that represent the address of every node written to the backing
    * media on the completion of the process.
    */
+  @Override
   public NodeReference[] performTreeWrite(TreeWriteSequence sequence) throws IOException {
     return internalPerformTreeWrite(sequence, 3);
   }
@@ -1668,6 +1752,7 @@ interface_loop:
   /**
    * {@inhericDoc}
    */
+  @Override
   public boolean featureAccountForAllNodes() {
     // We don't need to account for all references and disposes to nodes in
     // this implementation.
@@ -1677,6 +1762,7 @@ interface_loop:
   /**
    * {@inhericDoc}
    */
+  @Override
   public boolean linkLeaf(Key key, NodeReference ref) throws IOException {
     // NO-OP: A network tree system does not perform reference counting.
     //   Instead performs reachability testing and garbage collection through
@@ -1687,6 +1773,7 @@ interface_loop:
   /**
    * {@inhericDoc}
    */
+  @Override
   public void disposeNode(NodeReference ref) throws IOException {
     // NO-OP: Nodes can not be easily disposed, therefore this can do nothing
     //   except provide a hint to the garbage collector to reclaim resources
@@ -1891,43 +1978,53 @@ interface_loop:
 
     // ---------- Implemented from TreeLeaf ----------
 
+    @Override
     public NodeReference getReference() {
       return node_ref;
     }
 
+    @Override
     public int getSize() {
       return data.length - 12;
     }
 
+    @Override
     public int getCapacity() {
       throw new RuntimeException(
                         "Immutable leaf does not have a meaningful capacity");
     }
 
+    @Override
     public byte get(int position) throws IOException {
       return data[12 + position];
     }
 
+    @Override
     public void get(int position, byte[] buf, int off, int len) throws IOException {
       System.arraycopy(data, 12 + position, buf, off, len);
     }
 
+    @Override
     public void writeDataTo(AreaWriter writer) throws IOException {
       writer.put(data, 12, getSize());
     }
 
+    @Override
     public void shift(int position, int offset) throws IOException {
       throw new IOException("Write methods not available for immutable leaf");
     }
 
+    @Override
     public void put(int position, byte[] buf, int off, int len) throws IOException {
       throw new IOException("Write methods not available for immutable leaf");
     }
 
+    @Override
     public void setSize(int size) throws IOException {
       throw new IOException("Write methods not available for immutable leaf");
     }
 
+    @Override
     public int getHeapSizeEstimate() {
       return 8 + data.length + 64;
     }

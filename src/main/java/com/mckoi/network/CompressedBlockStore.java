@@ -27,17 +27,7 @@ package com.mckoi.network;
 
 import com.mckoi.data.NodeReference;
 import com.mckoi.util.StrongPagedAccess;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.io.SyncFailedException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
@@ -86,6 +76,7 @@ public class CompressedBlockStore implements BlockStore {
   /**
    * Opens the block store.
    */
+  @Override
   public boolean open() throws IOException {
     // If the store file doesn't exist, throw an error. We can't create
     // compressed files, they are made by calling the 'compress'.
@@ -103,6 +94,7 @@ public class CompressedBlockStore implements BlockStore {
   /**
    * Closes the block store.
    */
+  @Override
   public void close() throws IOException {
     content.close();
     content = null;
@@ -115,6 +107,7 @@ public class CompressedBlockStore implements BlockStore {
    * size. 'data_id' may be between 0 and 16383 (the maximum number of nodes
    * that can be stored per block).
    */
+  @Override
   public void putData(int data_id, byte[] buf, int off, int len)
                                                           throws IOException {
 
@@ -127,6 +120,7 @@ public class CompressedBlockStore implements BlockStore {
    * If no data is stored with the given data_id, a runtime exception is
    * generated.
    */
+  @Override
   public NodeSet getData(int data_id) throws IOException {
     if (data_id < 0 || data_id >= 16384) {
       throw new IllegalArgumentException("data_id out of range");
@@ -187,11 +181,37 @@ public class CompressedBlockStore implements BlockStore {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int getMaxDataId() throws IOException {
+
+    // Read the header from the file until we hit 0/0 entry.
+    int data_p = 0;
+
+    while (true) {
+      int pos = data_p * 6;
+      int did_pos = paged_content.readInt(pos);
+      int did_len = ((int) paged_content.readShort(pos + 4)) & 0x0FFFF;
+
+      // Did we hit 0/0 entry?
+      if (did_pos == 0 && did_len == 0) {
+        return data_p - 1;
+      }
+
+      // Go to next,
+      ++data_p;
+    }
+
+  }
+
+  /**
    * Removes the data with the given data_id stored within this block. This
    * only removes the pointer to the data, not the actual data itself which is
    * left remaining in the block container. To reclaim the resources for
    * deleted nodes, the block container needs to be rewritten.
    */
+  @Override
   public boolean removeData(int data_id) throws IOException {
     if (data_id < 0 || data_id >= 16384) {
       throw new IllegalArgumentException("data_id out of range");
@@ -204,6 +224,7 @@ public class CompressedBlockStore implements BlockStore {
    * Creates a 64-bit checksum from all the node data recorded in this block
    * store. Uses Adler32 to generate the checksum value.
    */
+  @Override
   public long createChecksumValue() throws IOException {
     // PENDING,
     // We need to go through and decompress all the data in the block to
@@ -215,6 +236,7 @@ public class CompressedBlockStore implements BlockStore {
    * Performs a file synchronize on this block store, ensuring that any data
    * is flushed onto the disk.
    */
+  @Override
   public void fsync() throws IOException {
     // Not implemented in a CompressedBlockStore,
   }

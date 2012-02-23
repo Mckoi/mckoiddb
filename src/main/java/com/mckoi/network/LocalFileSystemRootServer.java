@@ -25,20 +25,14 @@
 
 package com.mckoi.network;
 
-import com.mckoi.util.ByteArrayUtil;
 import com.mckoi.data.KeyObjectTransaction;
 import com.mckoi.data.NodeReference;
+import com.mckoi.util.ByteArrayUtil;
 import com.mckoi.util.StrongPagedAccess;
 import java.io.*;
 import java.security.SecureRandom;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Properties;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -64,24 +58,24 @@ import java.util.logging.Logger;
  * based.
  * <p>
  * An important consideration is the case if the root server fails, the
- * network as a whole fails. If information in the root server is completely
- * lost, it is not easy to reconstruct the data and so it is of utmost
- * importance that the root server is run on very stable hardware. The problem
- * with failure/data loss on the root server can somewhat be solved by frequent
- * backup and online server replication. Replication can help scale for read
- * access (since then multiple servers can service query requests) but this
- * can not solve write bottlenecks.
+ * access to the paths the server manages as a whole fails. If information in
+ * the root server is completely lost, it is not easy to reconstruct the data
+ * and so it is of utmost importance that the root server is run on very
+ * stable hardware. The problem with failure/data loss on the root server can
+ * somewhat be solved by frequent backup and online server replication.
+ * Replication can help scale for read access (since then multiple servers can
+ * service query requests) but this can not solve write bottlenecks.
  * <p>
  * Note that the management of root servers for different paths could be split
  * off onto individual servers per path. However, only one root server may
  * be in management of an access path at any one time.
  * <p>
- * Regarding scalability, I can imagine the cost of operations needed to
+ * Regarding scalability, I can foresee the cost of operations needed to
  * maintain a root server are low enough that bottlenecks such as network
  * bandwidth utilization and limitations with TCP connection handshaking will
  * come into play before machine hardware limitations do. Therefore for very
  * massive scaling requirements we would recommend implementing multiple
- * root servers servicing split database partitions.
+ * root servers servicing split database partitions (aka. data set sharding).
  * <p>
  * The commands a root server processor understands are;
  * <p>
@@ -293,6 +287,7 @@ public class LocalFileSystemRootServer {
     this.service_tracker = new ServiceStatusTracker(network);
 
     this.service_tracker.addListener(new ServiceStatusListener() {
+      @Override
       public void statusChange(ServiceAddress address, String service_type,
                                String old_status, String new_status) {
         // If it's a manager service, and the new status is UP
@@ -471,10 +466,9 @@ public class LocalFileSystemRootServer {
       // If the service is up in the tracker,
       if (service_tracker.isServiceUp(machine, "root")) {
         // Poll it to see if it's really up.
-        ProcessResult msg_in = null;
         // Send the poll to the service,
         MessageProcessor processor = network.connectRootServer(machine);
-        msg_in = processor.process(msg_out);
+        ProcessResult msg_in = processor.process(msg_out);
         // If return is a connection fault,
         Iterator<Message> it = msg_in.iterator();
         while (it.hasNext()) {
@@ -702,10 +696,9 @@ public class LocalFileSystemRootServer {
       if (!machine.equals(this_service)) {
         // If the service is up in the tracker,
         if (service_tracker.isServiceUp(machine, "root")) {
-          ProcessResult msg_in = null;
           // Send the message to the service,
           MessageProcessor processor = network.connectRootServer(machine);
-          msg_in = processor.process(msg_out);
+          ProcessResult msg_in = processor.process(msg_out);
           // If return is a connection fault,
           Iterator<Message> it = msg_in.iterator();
           while (it.hasNext()) {
@@ -2380,6 +2373,7 @@ public class LocalFileSystemRootServer {
     /**
      * Processes messages.
      */
+    @Override
     public MessageStream process(MessageStream message_stream) {
       // The reply message,
       MessageStream reply_message = new MessageStream(32);
@@ -2790,6 +2784,7 @@ public class LocalFileSystemRootServer {
 
     // ---------- Implemented methods ----------
 
+    @Override
     public void publishToPath(DataAddress root_node) {
       try {
         postToPath(path, root_node);
@@ -2799,6 +2794,7 @@ public class LocalFileSystemRootServer {
       }
     }
 
+    @Override
     public DataAddress getCurrentSnapshot() {
       try {
         return getPathLast(path);
@@ -2808,6 +2804,7 @@ public class LocalFileSystemRootServer {
       }
     }
 
+    @Override
     public DataAddress[] getHistoricalSnapshots(long time_start,
                                                 long time_end) {
       try {
@@ -2818,6 +2815,7 @@ public class LocalFileSystemRootServer {
       }
     }
 
+    @Override
     public DataAddress[] getSnapshotsSince(DataAddress root_node) {
       try {
         return getPathRootsSince(path, root_node);
@@ -2827,10 +2825,12 @@ public class LocalFileSystemRootServer {
       }
     }
 
+    @Override
     public KeyObjectTransaction createTransaction(DataAddress root_node) {
       return tree_system.createTransaction(root_node);
     }
 
+    @Override
     public DataAddress flushTransaction(KeyObjectTransaction transaction) {
       return tree_system.flushTransaction(transaction);
     }

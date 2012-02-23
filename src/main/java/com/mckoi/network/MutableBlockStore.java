@@ -27,7 +27,9 @@ package com.mckoi.network;
 
 import com.mckoi.util.ByteArrayUtil;
 import com.mckoi.util.StrongPagedAccess;
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.zip.Adler32;
 
 /**
@@ -96,6 +98,7 @@ class MutableBlockStore implements BlockStore {
   /**
    * Opens the block store.
    */
+  @Override
   public boolean open() throws IOException {
     // If the store file doesn't exist, create it
     if (!store.exists()) {
@@ -118,6 +121,7 @@ class MutableBlockStore implements BlockStore {
   /**
    * Closes the block store.
    */
+  @Override
   public void close() throws IOException {
 //    System.out.print("[H:" + paged_content.getCacheHits() + " M:" + paged_content.getCacheMiss() + "]");
     content.close();
@@ -132,6 +136,7 @@ class MutableBlockStore implements BlockStore {
    * size. 'data_id' may be between 0 and 16383 (the maximum number of nodes
    * that can be stored per block).
    */
+  @Override
   public void putData(int data_id, byte[] buf, int off, int len)
                                                           throws IOException {
     // Arg checks
@@ -181,6 +186,7 @@ class MutableBlockStore implements BlockStore {
    * If no data is stored with the given data_id, a runtime exception is
    * generated.
    */
+  @Override
   public NodeSet getData(int data_id) throws IOException {
     if (data_id < 0 || data_id >= 16384) {
       throw new IllegalArgumentException("data_id out of range");
@@ -213,11 +219,21 @@ class MutableBlockStore implements BlockStore {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int getMaxDataId() throws IOException {
+    throw new BlockReadException(
+                          "MutableBlockStore does not support 'getMaxDataId'");
+  }
+
+  /**
    * Removes the data with the given data_id stored within this block. This
    * only removes the pointer to the data, not the actual data itself which is
    * left remaining in the block container. To reclaim the resources for
    * deleted nodes, the block container needs to be rewritten.
    */
+  @Override
   public boolean removeData(int data_id) throws IOException {
     if (data_id < 0 || data_id >= 16384) {
       throw new IllegalArgumentException("data_id out of range");
@@ -249,6 +265,7 @@ class MutableBlockStore implements BlockStore {
    * Creates a 64-bit checksum from all the node data recorded in this block
    * store. Uses Adler32 to generate the checksum value.
    */
+  @Override
   public long createChecksumValue() throws IOException {
     Adler32 alder1 = new Adler32();
     Adler32 alder2 = new Adler32();
@@ -314,12 +331,14 @@ class MutableBlockStore implements BlockStore {
    * Performs a file synchronize on this block store, ensuring that any data
    * is flushed onto the disk.
    */
+  @Override
   public void fsync() throws IOException {
     if (content != null) {
       content.getFD().sync();
     }
   }
 
+  @Override
   public String toString() {
     return store.toString();
   }
