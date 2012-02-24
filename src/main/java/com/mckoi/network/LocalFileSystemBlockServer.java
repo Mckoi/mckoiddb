@@ -748,6 +748,28 @@ public class LocalFileSystemBlockServer {
         return;
       }
 
+      // The last time the block was written to,
+      long block_last_write = block_container.getLastWrite();
+      // Check the last modified time,
+      if (block_last_write == 0) {
+        // This signifies an IO error,
+        // FAIL;
+        log.log(Level.WARNING,
+                "Failed block rewrite because last modified time is 0.");
+        return;
+      }
+      // If the block file was updated within 7 days then fail to update,
+      // NOTE: 7 days?
+      long time_7_days_ago = System.currentTimeMillis() -
+                                                  ( 7 * 24 * 60 * 60 * 1000 );
+      if (block_last_write > time_7_days_ago) {
+        // Block file written too soon,
+        // FAIL;
+        log.log(Level.WARNING,
+              "Failed block rewrite because block was created within 7 days.");
+        return;
+      }
+
       int[] data_id_arr = new int[nodes_to_preserve.length];
 
       int i = 0;
@@ -1153,6 +1175,15 @@ public class LocalFileSystemBlockServer {
      */
     private BlockStore getBlockStore() {
       return block_store;
+    }
+
+    /**
+     * Returns the time the block store was last modified. This is either the
+     * time a node was written to the store if it's a mutable store, or the
+     * time the store was created if it's an immutable store.
+     */
+    private long getLastModified() {
+      return block_store.getLastModified();
     }
 
     /**

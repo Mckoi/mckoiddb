@@ -99,6 +99,14 @@ interface BlockStore {
   long createChecksumValue() throws IOException;
 
   /**
+   * Returns the time this file was last modified. This is either the time
+   * the block file was last written to if it's a mutable store, or the last
+   * time the file was finished being completely written to if it's a mutable
+   * block store.
+   */
+  long getLastModified();
+
+  /**
    * Performs a file synchronize on this block store, ensuring that any data
    * is flushed onto the disk.
    */

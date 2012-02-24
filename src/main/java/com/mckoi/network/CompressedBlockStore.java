@@ -102,6 +102,14 @@ public class CompressedBlockStore implements BlockStore {
   }
 
   /**
+   * {@inheritDoc}
+   */
+  @Override
+  public long getLastModified() {
+    return store.lastModified();
+  }
+
+  /**
    * Stores node data in the backed store with the given data_id. The data
    * may be a maximum of 65535 bytes in length limiting node length to this
    * size. 'data_id' may be between 0 and 16383 (the maximum number of nodes

@@ -1751,7 +1751,7 @@ public class LocalFileSystemRootServer {
 
         long pos = mid * ROOT_ITEM_SIZE;
         long mid_uid = access.readLong(pos);
-
+        
         if (mid_uid < search_uid) { //mid_timestamp < timestamp) {
           low = mid + 1;
         }

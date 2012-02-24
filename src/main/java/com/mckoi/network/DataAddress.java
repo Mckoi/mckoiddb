@@ -50,7 +50,7 @@ import com.mckoi.data.NodeReference;
  * @author Tobias Downer
  */
 
-public final class DataAddress {
+public final class DataAddress implements Comparable<DataAddress> {
 
   /**
    * The address value as a NodeReference.
@@ -85,13 +85,7 @@ public final class DataAddress {
    * Returns the block id part of the address value.
    */
   public BlockId getBlockId() {
-    long addr_low = address_value.getLowLong();
-    long addr_high = address_value.getHighLong();
-    addr_low = (addr_low >> 16) & 0x0FFFFFFFFFFFFL;
-    addr_low |= (addr_high & 0x0FF) << 48;
-    addr_high = addr_high >> 16;
-
-    return new BlockId(addr_high, addr_low);
+    return getBlockIdFrom(address_value);
   }
 
   /**
@@ -137,6 +131,17 @@ public final class DataAddress {
     return new DataAddress(NodeReference.parseString(str));
   }
 
+  /**
+   * Returns the BlockId for the given NodeReference.
+   */
+  public static BlockId getBlockIdFrom(NodeReference node) {
+    long addr_low = node.getLowLong();
+    long addr_high = node.getHighLong();
+    addr_low = (addr_low >> 16) & 0x0FFFFFFFFFFFFL;
+    addr_low |= (addr_high & 0x0FF) << 48;
+    addr_high = addr_high >> 16;
+    return new BlockId(addr_high, addr_low);
+  }
 
 
   @Override
@@ -158,6 +163,11 @@ public final class DataAddress {
       return false;
     }
     return getValue().equals(((DataAddress) ob).getValue());
+  }
+
+  @Override
+  public int compareTo(DataAddress o) {
+    return getValue().compareTo(o.getValue());
   }
 
 }

@@ -25,6 +25,7 @@
 
 package com.mckoi.network;
 
+import com.mckoi.data.NodeReference;
 import com.mckoi.util.StringUtil;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -1500,6 +1501,41 @@ public class NetworkProfile {
 
   }
 
+  /**
+   * Tells the block server at the given service address to preserve only
+   * the nodes in the 'nodes_to_preserve' list. Any other nodes in the block
+   * may safely be removed from the block file to free up system resources.
+   */
+  public long preserveNodesInBlock(ServiceAddress block_server,
+                     BlockId block_id, List<NodeReference> nodes_to_preserve)
+                                                 throws NetworkAdminException {
+
+    // Turn the nodes list into a DataAddress array,
+    DataAddress[] da_arr = new DataAddress[nodes_to_preserve.size()];
+    int i = 0;
+    for (NodeReference node : nodes_to_preserve) {
+      da_arr[i] = new DataAddress(node);
+      ++i;
+    }
+
+    // The message,
+    MessageStream msg_out = new MessageStream(7);
+    msg_out.addMessage("preserveNodesInBlock");
+    msg_out.addBlockId(block_id);
+    msg_out.addDataAddressArr(da_arr);
+    msg_out.closeMessage();
+    
+    Message m = commandBlock(block_server, msg_out);
+    if (m.isError()) {
+      throw new NetworkAdminException(m);
+    }
+
+    // Return the process_id
+    long process_id = (Long) m.param(0);
+    return process_id;
+
+  }
+  
 
 //  /**
 //   * Return the number of block to block server mappings the manager server is
