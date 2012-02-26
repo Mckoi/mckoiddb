@@ -195,6 +195,13 @@ public class SDBIndex implements Iterable<SDBRow>, SDBTrustedObject {
   }
 
   /**
+   * Returns true if this index is empty, false otherwise.
+   */
+  public boolean isEmpty() {
+    return (size() == 0);
+  }
+
+  /**
    * Returns true if this indexed view contains the given value.
    */
   public boolean contains(String e) {
@@ -247,9 +254,32 @@ public class SDBIndex implements Iterable<SDBRow>, SDBTrustedObject {
   }
 
   /**
+   * Returns the first value in this index view, or null if the set is empty.
+   */
+  public String firstValue() {
+    SDBRow first_row = first();
+    if (first_row != null) {
+      return first_row.getValue(columnid);
+    }
+    return null;
+  }
+
+  /**
+   * Returns the last value in this index view, or null if the set is empty.
+   */
+  public String lastValue() {
+    SDBRow last_row = last();
+    if (last_row != null) {
+      return last_row.getValue(columnid);
+    }
+    return null;
+  }
+
+  /**
    * Returns a cursor for traversing this view of the index from the start
    * position onwards.
    */
+  @Override
   public RowCursor iterator() {
     versionCheck();
     return new RowCursor(table, table_version,
@@ -398,40 +428,49 @@ public class SDBIndex implements Iterable<SDBRow>, SDBTrustedObject {
       backed.position(backed.size());
     }
 
+    @Override
     public Iterator64Bit copy() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean hasNext() {
       return backed.hasPrevious();
     }
 
+    @Override
     public boolean hasPrevious() {
       return backed.hasNext();
     }
 
+    @Override
     public long next() {
       return backed.previous();
     }
 
+    @Override
     public long previous() {
       return backed.next();
     }
 
+    @Override
     public void position(long p) {
       long size = backed.size();
       backed.position(size - (p + 1));
     }
 
+    @Override
     public long position() {
       long size = backed.size();
       return size - (backed.position() + 1);
     }
 
+    @Override
     public long remove() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public long size() {
       return backed.size();
     }
