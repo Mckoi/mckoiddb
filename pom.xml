@@ -9,7 +9,8 @@
   <version>1.4-dev</version>
   <name>MckoiDDB</name>
 
-  <url>http://maven.apache.org</url>
+  <url>http://www.mckoi.com/mckoiddb/index.html</url>
+
     <build>
         <plugins>
             <plugin>
