@@ -81,7 +81,7 @@ final class ODBClasses {
 
     // Class objects have a name and specification field describing the class
     c = new SimpleClass("System Class", "$Class",
-                        ODBTransaction.SYS_CLASS_REFERENCE);
+                        ODBTransactionImpl.SYS_CLASS_REFERENCE);
     c.addField("name", "[S", false);
     c.addField("serialization", "[S", false);
     c.setImmutable();
@@ -89,7 +89,7 @@ final class ODBClasses {
 
     // Class objects have a name and specification field describing the class
     c = new SimpleClass("System Class", "$Namer",
-                        ODBTransaction.SYS_NAMER_REFERENCE);
+                        ODBTransactionImpl.SYS_NAMER_REFERENCE);
     c.addField("name", "[S", false);
     c.addField("class_ref", "[S", false);
     c.addField("ref", "[S", false);

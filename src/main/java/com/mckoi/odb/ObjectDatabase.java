@@ -25,11 +25,7 @@
 
 package com.mckoi.odb;
 
-import com.mckoi.data.DataFile;
-import com.mckoi.data.Key;
-import com.mckoi.data.KeyObjectTransaction;
-import com.mckoi.data.PropertySet;
-import com.mckoi.data.TreeSystemTransaction;
+import com.mckoi.data.*;
 import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.ConsensusDDBConnection;
 import com.mckoi.network.ConsensusProcessor;
@@ -66,6 +62,7 @@ public class ObjectDatabase implements ConsensusProcessor {
    * The name of this processor, displayed in the administration user
    * interface.
    */
+  @Override
   public String getName() {
     return "Mckoi Object Database";
   }
@@ -74,6 +71,7 @@ public class ObjectDatabase implements ConsensusProcessor {
    * A description of this processor appropriate for display in the help
    * section of the user interface.
    */
+  @Override
   public String getDescription() {
     return "An object data model that supports primitives for building " +
            "persistent graph structures.";
@@ -82,6 +80,7 @@ public class ObjectDatabase implements ConsensusProcessor {
   /**
    * {@inheritDoc}
    */
+  @Override
   public String getStats(ConsensusDDBConnection connection,
                          DataAddress snapshot) {
     try {
@@ -108,13 +107,14 @@ public class ObjectDatabase implements ConsensusProcessor {
   /**
    * {@inheritDoc}
    */
+  @Override
   public void initialize(ConsensusDDBConnection connection) {
     // Get the current root,
     DataAddress current_root = connection.getCurrentSnapshot();
     // Turn it into a transaction
     KeyObjectTransaction transaction = connection.createTransaction(current_root);
     // Initialize the magic property set, etc
-    DataFile df = transaction.getDataFile(ODBTransaction.MAGIC_KEY, 'w');
+    DataFile df = transaction.getDataFile(ODBTransactionImpl.MAGIC_KEY, 'w');
     PropertySet magic_set = new PropertySet(df);
     magic_set.setProperty("ob_type", "com.mckoi.odb.ObjectDatabase");
     magic_set.setProperty("version", "1.0");
@@ -126,6 +126,7 @@ public class ObjectDatabase implements ConsensusProcessor {
   /**
    * {@inheritDoc}
    */
+  @Override
   public DataAddress commit(ConsensusDDBConnection connection,
                             DataAddress proposal) throws CommitFaultException {
 
@@ -133,8 +134,8 @@ public class ObjectDatabase implements ConsensusProcessor {
 
       // Turn the proposal into a proposed ODBTransaction object,
       KeyObjectTransaction t = connection.createTransaction(proposal);
-      ODBTransaction proposed_transaction =
-                                        new ODBTransaction(null, proposal, t);
+      ODBTransactionImpl proposed_transaction =
+                                    new ODBTransactionImpl(null, proposal, t);
 
       // The transaction log,
       ObjectLog object_log = proposed_transaction.getProposedObjectLog();
@@ -178,8 +179,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         DataAddress current_root = connection.getCurrentSnapshot();
         KeyObjectTransaction current_t =
                                    connection.createTransaction(current_root);
-        ODBTransaction current_transaction =
-                            new ODBTransaction(null, current_root, current_t);
+        ODBTransactionImpl current_transaction =
+                        new ODBTransactionImpl(null, current_root, current_t);
 
         // There are roots, so we need to go through a merge process and
         // create a new proposal and ensure it is consistent.
@@ -220,7 +221,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         // For each root,
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
-          ODBTransaction root_transaction = new ODBTransaction(null, root, rt);
+          ODBTransactionImpl root_transaction =
+                                        new ODBTransactionImpl(null, root, rt);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
@@ -302,7 +304,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         // For each root,
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
-          ODBTransaction root_transaction = new ODBTransaction(null, root, rt);
+          ODBTransactionImpl root_transaction =
+                                        new ODBTransactionImpl(null, root, rt);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
@@ -379,7 +382,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         // For each root,
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
-          ODBTransaction root_transaction = new ODBTransaction(null, root, rt);
+          ODBTransactionImpl root_transaction =
+                                       new ODBTransactionImpl(null, root, rt);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();

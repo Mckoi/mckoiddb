@@ -48,7 +48,7 @@ class OrderedReferenceList implements ODBList {
   /**
    * The backed transaction.
    */
-  private final ODBTransaction transaction;
+  private final ODBTransactionImpl transaction;
 
   /**
    * The list resource reference.
@@ -117,7 +117,7 @@ class OrderedReferenceList implements ODBList {
   /**
    * View constructor.
    */
-  private OrderedReferenceList(ODBTransaction transaction,
+  private OrderedReferenceList(ODBTransactionImpl transaction,
                                Reference list_reference,
                                ODBClass list_class,
                                DataFile data,
@@ -143,7 +143,7 @@ class OrderedReferenceList implements ODBList {
   /**
    * Constructor.
    */
-  OrderedReferenceList(ODBTransaction transaction,
+  OrderedReferenceList(ODBTransactionImpl transaction,
                        Reference list_reference,
                        ODBClass list_class,
                        DataFile data,

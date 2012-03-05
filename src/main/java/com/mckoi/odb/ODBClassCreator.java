@@ -44,7 +44,7 @@ public class ODBClassCreator {
   /**
    * The backed transaction.
    */
-  private final ODBTransaction transaction;
+  private final ODBTransactionImpl transaction;
 
   /**
    * The list of classes created by this object.
@@ -54,7 +54,7 @@ public class ODBClassCreator {
   /**
    * Constructor.
    */
-  ODBClassCreator(ODBTransaction backed_transaction) {
+  ODBClassCreator(ODBTransactionImpl backed_transaction) {
     this.transaction = backed_transaction;
     classes = new ArrayList(8);
   }

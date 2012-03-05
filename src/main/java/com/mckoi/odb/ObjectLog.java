@@ -25,14 +25,7 @@
 
 package com.mckoi.odb;
 
-import com.mckoi.data.ByteArray;
-import com.mckoi.data.DataFile;
-import com.mckoi.data.Integer128Bit;
-import com.mckoi.data.JavaByteArray;
-import com.mckoi.data.Key;
-import com.mckoi.data.KeyObjectTransaction;
-import com.mckoi.data.OrderedSetData;
-import com.mckoi.data.PropertySet;
+import com.mckoi.data.*;
 import com.mckoi.network.DataAddress;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -80,8 +73,8 @@ class ObjectLog {
     // Ensure the 'sorted_log' member is set,
     if (sorted_log == null) {
       // We need to create the sorted_log entry,
-      DataFile log_file =
-              transaction.getDataFile(ODBTransaction.TRANSACTION_LOG_KEY, 'w');
+      DataFile log_file = transaction.getDataFile(
+                                  ODBTransactionImpl.TRANSACTION_LOG_KEY, 'w');
       if (!use_existing) {
         // If we are not using an existing log, we need to clear any existing
         // entries.
@@ -715,7 +708,7 @@ class ObjectLog {
   void flush(DataAddress base_root) {
     // Update the transaction properties,
     DataFile dfile = transaction.getDataFile(
-                              ODBTransaction.TRANSACTION_PROPERTIES_KEY, 'w');
+                           ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, 'w');
     PropertySet pset = new PropertySet(dfile);
     if (base_root == null) {
       pset.setProperty("B", null);
@@ -732,7 +725,7 @@ class ObjectLog {
    */
   DataAddress getBaseRoot() {
     DataFile dfile = transaction.getDataFile(
-            ODBTransaction.TRANSACTION_PROPERTIES_KEY, 'w');
+                           ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, 'w');
     PropertySet pset = new PropertySet(dfile);
     String base_root_str = pset.getProperty("B");
     if (base_root_str == null) {
@@ -748,7 +741,7 @@ class ObjectLog {
   void printDebug() {
 
     System.out.println("ObjectLog size = " + transaction.getDataFile(
-                             ODBTransaction.TRANSACTION_LOG_KEY, 'r').size());
+                          ODBTransactionImpl.TRANSACTION_LOG_KEY, 'r').size());
     System.out.println("ObjectLog entries = " + getSortedLog().size());
 
     final OrderedSetData alloc_set = getSortedLog();
@@ -769,6 +762,7 @@ class ObjectLog {
     return new Iterator<KeyAllocation>() {
       private KeyAllocation cur_resource_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!alloc_set_iterator.hasNext()) {
           return false;
@@ -807,6 +801,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public KeyAllocation next() {
         if (cur_resource_ref != null || hasNext()) {
           KeyAllocation ka = cur_resource_ref;
@@ -815,6 +810,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -829,6 +825,7 @@ class ObjectLog {
     return new Iterator<DictionaryEvent>() {
       private Reference dictionary_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -856,6 +853,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public DictionaryEvent next() {
         if (dictionary_ref != null || hasNext()) {
           DictionaryEvent evt = new DictionaryEvent(dictionary_ref);
@@ -864,6 +862,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -879,6 +878,7 @@ class ObjectLog {
       private Reference cur_class_ref = null;
       private Reference cur_obj_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -909,6 +909,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public ObjectChangeEvent next() {
         if (cur_class_ref != null || hasNext()) {
           ObjectChangeEvent evt =
@@ -919,6 +920,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -935,6 +937,7 @@ class ObjectLog {
       private Reference cur_obj_ref = null;
       private Reference cur_class_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -968,6 +971,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public ListItemChangeEvent next() {
         if (cur_list_ref != null || hasNext()) {
           ListItemChangeEvent evt = new ListItemChangeEvent(
@@ -979,6 +983,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -995,6 +1000,7 @@ class ObjectLog {
       private Reference cur_obj_ref = null;
       private Reference cur_class_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -1028,6 +1034,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public ListItemChangeEvent next() {
         if (cur_list_ref != null || hasNext()) {
           ListItemChangeEvent evt = new ListItemChangeEvent(
@@ -1039,6 +1046,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -1052,6 +1060,7 @@ class ObjectLog {
     return new Iterator<ListChangeEvent>() {
       private Reference list_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -1079,6 +1088,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public ListChangeEvent next() {
         if (list_ref != null || hasNext()) {
           ListChangeEvent evt = new ListChangeEvent(list_ref);
@@ -1087,6 +1097,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -1100,6 +1111,7 @@ class ObjectLog {
     return new Iterator<DataChangeEvent>() {
       private Reference data_ref = null;
       private boolean end_reached = false;
+      @Override
       public boolean hasNext() {
         if (!change_set_iterator.hasNext()) {
           return false;
@@ -1127,6 +1139,7 @@ class ObjectLog {
         }
         return true;
       }
+      @Override
       public DataChangeEvent next() {
         if (data_ref != null || hasNext()) {
           DataChangeEvent evt = new DataChangeEvent(data_ref);
@@ -1135,6 +1148,7 @@ class ObjectLog {
         }
         throw new NoSuchElementException();
       }
+      @Override
       public void remove() {
         throw new UnsupportedOperationException("Not supported yet.");
       }
@@ -1157,6 +1171,7 @@ class ObjectLog {
   private static final Comparator<ByteArray> LOG_COLLATOR =
                                               new Comparator<ByteArray>() {
 
+    @Override
     public int compare(ByteArray o1, ByteArray o2) {
 
       DataInputStream din1 = o1.getDataInputStream();

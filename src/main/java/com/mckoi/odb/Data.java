@@ -36,7 +36,7 @@ import com.mckoi.data.DataFile;
 
 class Data implements ODBData {
 
-  private ODBTransaction transaction;
+  private ODBTransactionImpl transaction;
 
   private Reference reference;
 
@@ -47,7 +47,7 @@ class Data implements ODBData {
   /**
    * Constructor.
    */
-  Data(ODBTransaction transaction,
+  Data(ODBTransactionImpl transaction,
        Reference reference, AddressableDataFile data_file) {
     this.transaction = transaction;
     this.reference = reference;

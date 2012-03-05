@@ -89,7 +89,7 @@ public class ODBSession {
     if (!check_performed) {
       synchronized (this) {
         if (!check_performed) {
-          DataFile df = transaction.getDataFile(ODBTransaction.MAGIC_KEY, 'r');
+          DataFile df = transaction.getDataFile(ODBTransactionImpl.MAGIC_KEY, 'r');
           PropertySet magic_set = new PropertySet(df);
           String ob_type = magic_set.getProperty("ob_type");
           String version = magic_set.getProperty("version");
@@ -115,7 +115,7 @@ public class ODBSession {
     // Check the path is a valid ODBTransaction format,
     checkPathValid(transaction);
     // Wrap it around an ODBTransaction object, and return it
-    return new ODBTransaction(this, base_root, transaction);
+    return new ODBTransactionImpl(this, base_root, transaction);
   }
 
   /**
