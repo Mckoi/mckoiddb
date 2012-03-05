@@ -44,7 +44,7 @@ import com.mckoi.data.DataFile;
  * @author Tobias Downer
  */
 
-public class SDBFile implements AddressableDataFile, SDBTrustedObject {
+public class SDBFile implements AddressableDataFile {
 
   /**
    * The backed transaction.
@@ -81,7 +81,7 @@ public class SDBFile implements AddressableDataFile, SDBTrustedObject {
    */
   private void logChange() {
     if (changed) {
-      return;
+      // Already changed, so do nothing
     }
     else {
       transaction.logFileChange(file_name);

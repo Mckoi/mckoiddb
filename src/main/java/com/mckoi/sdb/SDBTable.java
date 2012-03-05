@@ -25,25 +25,14 @@
 
 package com.mckoi.sdb;
 
-import com.mckoi.data.DataFile;
-import com.mckoi.data.DataFileUtils;
-import com.mckoi.data.DataRange;
-import com.mckoi.data.IndexObjectCollator;
-import com.mckoi.data.Iterator64Bit;
-import com.mckoi.data.Key;
-import com.mckoi.data.OrderedList64Bit;
-import com.mckoi.data.PropertySet;
+import com.mckoi.data.*;
 import com.mckoi.util.StringUtil;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.Collator;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 
 /**
  * SDBTable is a table structure with a single cell value type (strings), and
@@ -70,7 +59,7 @@ import java.util.Set;
  * @author Tobias Downer
  */
 
-public class SDBTable implements Iterable<SDBRow>, SDBTrustedObject {
+public class SDBTable implements Iterable<SDBRow> {
 
   /**
    * The unique table_id given this table within this transaction.
@@ -933,6 +922,7 @@ public class SDBTable implements Iterable<SDBRow>, SDBTrustedObject {
    * Note that if a change happens to the table while an iterator is being
    * used, the behavior of the iterator is not defined.
    */
+  @Override
   public RowCursor iterator() {
     DataFile df = getDataFile(row_index_key);
     OrderedList64Bit list = new OrderedList64Bit(df);
@@ -1271,6 +1261,7 @@ public class SDBTable implements Iterable<SDBRow>, SDBTrustedObject {
       this.columnid = columnid;
     }
 
+    @Override
     public int compare(long ref, Object val) {
       // Nulls are ordered at the beginning
       String v = getCellValue(ref, columnid);
@@ -1305,6 +1296,7 @@ public class SDBTable implements Iterable<SDBRow>, SDBTrustedObject {
       this.collator = Collator.getInstance(locale);
     }
 
+    @Override
     public int compare(long ref, Object val) {
       // Nulls are ordered at the beginning
       String v = getCellValue(ref, columnid);

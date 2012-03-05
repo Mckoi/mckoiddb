@@ -38,8 +38,8 @@ import java.net.Socket;
  * the result is returned to the client.
  * <p>
  * Note that all network communication using this connector is not encrypted
- * so it is not appropriate for use over a public network or the internet.
- * This type of connection could be made secure if tunnelled through a secure
+ * so it is not appropriate for use over a public network or the Internet.
+ * This type of connection could be made secure if tunneled through a secure
  * channel (such as ssh).
  *
  * @author Tobias Downer

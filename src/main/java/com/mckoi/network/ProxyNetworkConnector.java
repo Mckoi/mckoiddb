@@ -25,13 +25,7 @@
 
 package com.mckoi.network;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.HashMap;
 
 /**
@@ -62,6 +56,12 @@ public class ProxyNetworkConnector implements NetworkConnector {
    * Constructs the connector.
    */
   public ProxyNetworkConnector(String net_password) {
+    
+    // Security check,
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) security.checkPermission(
+                                MckoiNetworkPermission.CREATE_PROXY_CONNECTOR);
+    
     this.net_password = net_password;
   }
 
@@ -87,6 +87,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
     // Done,
   }
 
+  @Override
   public void stop() {
     try {
       synchronized (proxy_lock) {
@@ -97,7 +98,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
       pout.close();
     }
     catch (IOException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
     }
     finally {
       init_string = null;
@@ -109,6 +110,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
   /**
    * Connects to the instance administration component of the given address.
    */
+  @Override
   public MessageProcessor connectInstanceAdmin(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'a');
   }
@@ -116,6 +118,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
   /**
    * Connects to a block server at the given address.
    */
+  @Override
   public MessageProcessor connectBlockServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'b');
   }
@@ -123,6 +126,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
   /**
    * Connects to a manager server at the given address.
    */
+  @Override
   public MessageProcessor connectManagerServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'm');
   }
@@ -130,6 +134,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
   /**
    * Connects to a root server at the given address.
    */
+  @Override
   public MessageProcessor connectRootServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'r');
   }
@@ -168,6 +173,7 @@ public class ProxyNetworkConnector implements NetworkConnector {
       this.message_dictionary = new HashMap();
     }
 
+    @Override
     public MessageStream process(MessageStream msg_stream) {
       try {
         synchronized (proxy_lock) {

@@ -26,7 +26,10 @@
 package com.mckoi.network;
 
 import java.io.*;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.HashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -125,9 +128,10 @@ public class TCPInstanceProxyServer implements Runnable {
     /**
      * The connection process loop.
      */
+    @Override
     public void run() {
-      InputStream socket_in = null;
-      OutputStream socket_out = null;
+      InputStream socket_in;
+      OutputStream socket_out;
       try {
         // 30 minute timeout on proxy connections,
         s.setSoTimeout(30 * 60 * 1000);

@@ -40,8 +40,7 @@ import com.mckoi.network.MckoiDDBClient;
  * @author Tobias Downer
  */
 
-// NOT SDBTrustedObject. This should not be exposed to untrusted clients.
-public class SDBSession {
+public final class SDBSession {
 
   /**
    * The TCPMckoiDDBClient object used to handle the connection state
@@ -65,12 +64,17 @@ public class SDBSession {
    * network.
    */
   public SDBSession(MckoiDDBClient client, String path_name) {
+    // Null checks
+    if (client == null || path_name == null) throw new NullPointerException();
+
     this.db_client = client;
     this.path_name = path_name;
   }
 
   /**
    * Returns the TCPMckoiDDBClient object used on this session.
+   * <p>
+   * Security: Don't expose this outside the package scope!
    */
   MckoiDDBClient getDatabaseClient() {
     return db_client;
@@ -194,6 +198,7 @@ public class SDBSession {
   /**
    * Returns true if the sessions compare equally.
    */
+  @Override
   public boolean equals(Object ob) {
     if (ob == this) {
       return true;

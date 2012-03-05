@@ -33,11 +33,7 @@ import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.DataAddress;
 import com.mckoi.network.MckoiDDBClient;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * A transaction class that represents a snapshot view of a Simple Database
@@ -58,7 +54,6 @@ import java.util.Set;
  * @author Tobias Downer
  */
 
-// Not SDBTrustedObject. Most returned classes are trusted, however.
 public class SDBTransaction {
 
   /**

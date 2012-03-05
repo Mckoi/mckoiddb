@@ -25,23 +25,12 @@
 
 package com.mckoi.sdb;
 
-import com.mckoi.data.AddressableDataFile;
-import com.mckoi.data.DataFile;
-import com.mckoi.data.DataFileUtils;
-import com.mckoi.data.IndexObjectCollator;
-import com.mckoi.data.Key;
-import com.mckoi.data.KeyObjectTransaction;
-import com.mckoi.data.OrderedList64Bit;
-import com.mckoi.data.PropertySet;
+import com.mckoi.data.*;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.AbstractList;
-import java.util.Collections;
-import java.util.ConcurrentModificationException;
-import java.util.List;
-import java.util.RandomAccess;
+import java.util.*;
 
 /**
  * A structure that manages a directory set (a name space of strings mapped to
@@ -320,6 +309,7 @@ class DirectorySet {
     public ItemCollator() {
     }
 
+    @Override
     public int compare(long ref, Object val) {
       // Nulls are ordered at the beginning
       String v = getItemName(ref);
@@ -340,8 +330,7 @@ class DirectorySet {
   }
 
   // This is a trusted object,
-  private class ItemList extends AbstractList<String>
-                                   implements RandomAccess, SDBTrustedObject {
+  private class ItemList extends AbstractList<String> implements RandomAccess {
 
     private OrderedList64Bit list;
 
@@ -412,10 +401,12 @@ class DirectorySet {
 
 
 
+    @Override
     public void copyFrom(DataFile from, long size) {
       df.copyFrom(from, size);
     }
 
+    @Override
     public void replicateFrom(DataFile from) {
       // We must fall back to a copy implementation because the header
       // may be different between replications of the data.
@@ -424,6 +415,7 @@ class DirectorySet {
       copyFrom(from, from.size());
     }
 
+    @Override
     public Object getBlockLocationMeta(long start_position, long end_position) {
       // Transform,
       return df.getBlockLocationMeta(
@@ -431,11 +423,13 @@ class DirectorySet {
     }
 
     // Legacy
+    @Override
     public void copyTo(DataFile target, long size) {
       target.copyFrom(this, size);
     }
 
     // Legacy
+    @Override
     public void replicateTo(DataFile target) {
       target.replicateFrom(this);
     }
@@ -489,34 +483,42 @@ class DirectorySet {
 //
 //    }
 
+    @Override
     public void delete() {
       df.setSize(start);
     }
 
+    @Override
     public byte get() {
       return df.get();
     }
 
+    @Override
     public void get(byte[] buf, int off, int len) {
       df.get(buf, off, len);
     }
 
+    @Override
     public char getChar() {
       return df.getChar();
     }
 
+    @Override
     public int getInt() {
       return df.getInt();
     }
 
+    @Override
     public long getLong() {
       return df.getLong();
     }
 
+    @Override
     public short getShort() {
       return df.getShort();
     }
 
+    @Override
     public void position(long position) {
       if (position < 0) {
         throw new java.lang.IndexOutOfBoundsException();
@@ -524,38 +526,47 @@ class DirectorySet {
       df.position(start + position);
     }
 
+    @Override
     public long position() {
       return df.position() - start;
     }
 
+    @Override
     public void put(byte b) {
       df.put(b);
     }
 
+    @Override
     public void put(byte[] buf, int off, int len) {
       df.put(buf, off, len);
     }
 
+    @Override
     public void put(byte[] buf) {
       df.put(buf);
     }
 
+    @Override
     public void putChar(char c) {
       df.putChar(c);
     }
 
+    @Override
     public void putInt(int i) {
       df.putInt(i);
     }
 
+    @Override
     public void putLong(long l) {
       df.putLong(l);
     }
 
+    @Override
     public void putShort(short s) {
       df.putShort(s);
     }
 
+    @Override
     public void setSize(long size) {
       if (size < 0) {
         throw new java.lang.IndexOutOfBoundsException();
@@ -563,10 +574,12 @@ class DirectorySet {
       df.setSize(size + start);
     }
 
+    @Override
     public void shift(long offset) {
       df.shift(offset);
     }
 
+    @Override
     public long size() {
       return df.size() - start;
     }

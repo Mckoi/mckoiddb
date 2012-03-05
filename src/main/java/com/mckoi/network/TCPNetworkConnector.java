@@ -26,7 +26,12 @@
 package com.mckoi.network;
 
 import java.io.*;
-import java.net.*;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -71,6 +76,12 @@ class TCPNetworkConnector implements NetworkConnector {
    * Constructor.
    */
   TCPNetworkConnector(String password) {
+
+    // Security check,
+    SecurityManager security = System.getSecurityManager();
+    if (security != null)
+         security.checkPermission(MckoiNetworkPermission.CREATE_TCP_CONNECTOR);
+
     connection_pool = new HashMap();
     this.password = password;
 
@@ -82,6 +93,7 @@ class TCPNetworkConnector implements NetworkConnector {
     background_thread.start();
   }
 
+  @Override
   public void stop() {
     background_thread.stopConnectionDestroy();
   }
@@ -96,19 +108,8 @@ class TCPNetworkConnector implements NetworkConnector {
       c = connection_pool.get(address);
       // If there isn't, establish a connection,
       if (c == null) {
-        Socket socket = new Socket(address.asInetAddress(), address.getPort());
-        socket.setSoTimeout(30 * 1000);  // 30 second timeout,
-        socket.setTcpNoDelay(true);
-        int cur_send_buf_size = socket.getSendBufferSize();
-        if (cur_send_buf_size < 256 * 1024) {
-          socket.setSendBufferSize(256 * 1024);
-        }
-        int cur_receive_buf_size = socket.getReceiveBufferSize();
-        if (cur_receive_buf_size < 256 * 1024) {
-          socket.setReceiveBufferSize(256 * 1024);
-        }
-        c = new TCPConnection(socket);
-        c.connect(password);
+        c = new TCPConnection();
+        c.connect(password, address);
         connection_pool.put(address, c);
       }
       else {
@@ -149,6 +150,7 @@ class TCPNetworkConnector implements NetworkConnector {
 
 
 
+  @Override
   public void finalize() throws Throwable {
     background_thread.stopConnectionDestroy();
   }
@@ -160,6 +162,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * Connects to the instance administration component of the given address.
    */
+  @Override
   public MessageProcessor connectInstanceAdmin(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'a');
   }
@@ -167,6 +170,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * Connects to a block server at the given address.
    */
+  @Override
   public MessageProcessor connectBlockServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'b');
   }
@@ -174,6 +178,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * Connects to a manager server at the given address.
    */
+  @Override
   public MessageProcessor connectManagerServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'm');
   }
@@ -181,6 +186,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * Connects to a root server at the given address.
    */
+  @Override
   public MessageProcessor connectRootServer(ServiceAddress address) {
     return new RemoteMessageProcessor(address, 'r');
   }
@@ -195,7 +201,7 @@ class TCPNetworkConnector implements NetworkConnector {
     /**
      * The socket connection.
      */
-    private final Socket s;
+    private Socket s;
 
     /**
      * The buffered input and output stream on this socket.
@@ -221,13 +227,43 @@ class TCPNetworkConnector implements NetworkConnector {
     /**
      * Constructs the connection on the given socket.
      */
-    TCPConnection(Socket s) {
-      this.s = s;
+    TCPConnection() {
       this.lock_count = 1;
       last_lock_timestamp = System.currentTimeMillis();
     }
 
-    void connect(String password) throws IOException {
+    void connect(String password, final ServiceAddress addr)
+                                                           throws IOException {
+
+      // Creating the socket connection is a privileged operation because it
+      // is dynamic (a call stack that ends up here can be from anything).
+      // We assume that all objects that call through to this are secured.
+      try {
+        AccessController.doPrivileged(new PrivilegedExceptionAction() {
+          @Override
+          public Object run() throws IOException {
+            s = new Socket(addr.asInetAddress(), addr.getPort());
+            return null;
+          }
+        });
+      }
+      // Rethrow as IOException
+      catch (PrivilegedActionException e) {
+        throw (IOException) e.getCause();
+      }
+
+      // Set up socket properties,
+      s.setSoTimeout(30 * 1000);  // 30 second timeout,
+      s.setTcpNoDelay(true);
+      int cur_send_buf_size = s.getSendBufferSize();
+      if (cur_send_buf_size < 256 * 1024) {
+        s.setSendBufferSize(256 * 1024);
+      }
+      int cur_receive_buf_size = s.getReceiveBufferSize();
+      if (cur_receive_buf_size < 256 * 1024) {
+        s.setReceiveBufferSize(256 * 1024);
+      }
+
       in = new BufferedInputStream(s.getInputStream(), 4000);
       out = new BufferedOutputStream(s.getOutputStream(), 4000);
 
@@ -245,6 +281,7 @@ class TCPNetworkConnector implements NetworkConnector {
       dout.flush();
 
       message_dictionary = new HashMap(128);
+
     }
 
     void close() throws IOException {
@@ -374,6 +411,7 @@ class TCPNetworkConnector implements NetworkConnector {
     }
     
     
+    @Override
     public ProcessResult process(MessageStream msg_stream) {
       return processInternal(msg_stream, 0);
     }
@@ -400,6 +438,7 @@ class TCPNetworkConnector implements NetworkConnector {
     }
 
 
+    @Override
     public void run() {
       try {
         ArrayList<TCPConnection> timeout_list = new ArrayList();

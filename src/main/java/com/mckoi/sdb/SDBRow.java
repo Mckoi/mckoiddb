@@ -32,7 +32,7 @@ package com.mckoi.sdb;
  * @author Tobias Downer
  */
 
-public class SDBRow implements SDBTrustedObject {
+public class SDBRow {
 
   /**
    * The backed SDBTable that this row belongs in.

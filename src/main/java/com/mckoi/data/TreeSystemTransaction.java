@@ -27,13 +27,8 @@ package com.mckoi.data;
 
 import com.mckoi.util.ByteArrayUtil;
 import java.io.IOException;
-import java.security.SecurityPermission;
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * A TreeSystemTransaction is a view of the TreeSystem that can be changed in
@@ -240,11 +235,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
    * from the store or from the mutable heap.
    */
   TreeNode fetchNode(NodeReference node_ref) throws IOException {
-
-//    SecurityManager sm = System.getSecurityManager();
-//    if (sm != null) {
-//      sm.checkPermission(new SecurityPermission("mckoiddb.fetchNode"));
-//    }
 
     // Is it a node we can fetch from the local node heap?
     if (isHeapNode(node_ref)) {
@@ -1215,7 +1205,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       // If it's a leaf, dispose it
       deleteNode(ref);
       // And return,
-      return;
     }
     else if (node instanceof TreeBranch) {
       // This is a branch, so we need to dipose the children if they are heap
@@ -1229,7 +1218,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       // Then dispose this,
       deleteNode(ref);
       // And return,
-      return;
     }
     else {
       throw new RuntimeException("Unknown node type.");
@@ -1248,7 +1236,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       // If it's a leaf, dispose it
       deleteNode(ref);
       // And return,
-      return;
     }
     else if (node instanceof TreeBranch) {
       // This is a branch, so we need to dipose the children if they are heap
@@ -1262,7 +1249,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       // Then dispose this,
       deleteNode(ref);
       // And return,
-      return;
     }
     else {
       throw new RuntimeException("Unknown node type.");
@@ -2042,6 +2028,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   /**
    * Returns true if a DataFile with the given key exists.
    */
+  @Override
   public boolean dataFileExists(Key key) {
     checkCriticalStop();
     try {
@@ -2633,6 +2620,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     
     
     
+    @Override
     public long size() {
       checkCriticalStop();
       try {
@@ -2649,16 +2637,19 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long position() {
       return p;
     }
 
+    @Override
     public void position(long position) {
       this.p = position;
     }
 
     // ---------- Accessor methods ----------
 
+    @Override
     public byte get() {
       checkCriticalStop();
       try {
@@ -2682,6 +2673,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void get(byte[] buf, int off, int len) {
       checkCriticalStop();
       try {
@@ -2700,6 +2692,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public short getShort() {
       checkCriticalStop();
       try {
@@ -2723,6 +2716,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public int getInt() {
       checkCriticalStop();
       try {
@@ -2746,6 +2740,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long getLong() {
       checkCriticalStop();
       try {
@@ -2769,6 +2764,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public char getChar() {
       checkCriticalStop();
       try {
@@ -2814,6 +2810,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 //    }
 
 
+    @Override
     public void setSize(long size) {
       checkCriticalStop();
       try {
@@ -2841,6 +2838,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void delete() {
       checkCriticalStop();
       try {
@@ -2861,6 +2859,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void shift(long offset) {
       checkCriticalStop();
       try {
@@ -2882,6 +2881,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void put(byte b) {
       checkCriticalStop();
       try {
@@ -2907,6 +2907,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void put(byte[] buf, int off, int len) {
       checkCriticalStop();
       try {
@@ -2931,10 +2932,12 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void put(byte[] buf) {
       put(buf, 0, buf.length);
     }
 
+    @Override
     public void putShort(short s) {
       checkCriticalStop();
       try {
@@ -2961,6 +2964,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void putInt(int i) {
       checkCriticalStop();
       try {
@@ -2987,6 +2991,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void putLong(long l) {
       checkCriticalStop();
       try {
@@ -3013,6 +3018,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void putChar(char c) {
       checkCriticalStop();
       try {
@@ -3039,6 +3045,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void copyFrom(DataFile from, long size) {
       checkCriticalStop();
       try {
@@ -3176,6 +3183,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void replicateFrom(DataFile from) {
       // TODO: Placeholder implementation,
       this.position(0);
@@ -3185,15 +3193,18 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     }
 
     // Legacy
+    @Override
     public void copyTo(DataFile target, long size) {
       target.copyFrom(this, size);
     }
 
     // Legacy
+    @Override
     public void replicateTo(DataFile target) {
       target.replicateFrom(this);
     }
 
+    @Override
     public Object getBlockLocationMeta(long start_position, long end_position) {
       return new TranLocationMeta(getTreeSystem(), getTransaction(),
                                   this, start_position, end_position);
@@ -3390,6 +3401,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 
     // -----
 
+    @Override
     public long size() {
       checkCriticalStop();
       try {
@@ -3406,14 +3418,17 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long position() {
       return p;
     }
 
+    @Override
     public void position(long position) {
       this.p = position;
     }
 
+    @Override
     public Key keyAtPosition() {
       checkCriticalStop();
       try {
@@ -3433,6 +3448,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long positionOnKeyStart() {
       checkCriticalStop();
       try {
@@ -3456,6 +3472,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long positionOnNextKey() {
       checkCriticalStop();
       try {
@@ -3478,6 +3495,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public long positionOnPreviousKey() {
       checkCriticalStop();
       try {
@@ -3521,6 +3539,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public AddressableDataFile getDataFile(char mode) {
       checkCriticalStop();
       try {
@@ -3542,6 +3561,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public AddressableDataFile getDataFile(Key key, char mode) {
       checkCriticalStop();
       try {
@@ -3560,6 +3580,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       }
     }
 
+    @Override
     public void replicateFrom(DataRange from) {
       if (from instanceof TranDataRange) {
         // If the tree systems are different we fall back
@@ -3599,6 +3620,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 
     }
 
+    @Override
     public void delete() {
       checkCriticalStop();
       try {
@@ -3640,16 +3662,19 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       this.range = range;
     }
 
+    @Override
     public boolean hasNext() {
       return range.position() < range.size();
     }
 
+    @Override
     public Key next() {
       Key key = range.keyAtPosition();
       range.positionOnNextKey();
       return key;
     }
 
+    @Override
     public void remove() {
       throw new UnsupportedOperationException(
                                       "Remove not supported on key iterator");
@@ -3876,13 +3901,13 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 
   public void printStatistics() throws IOException {
     NodeReference root_ref = getRootNodeRef();
-    long tree_height = treeHeight(root_ref);
+    long tree_height_local = treeHeight(root_ref);
     long leaf_count = leafCount(root_ref);
     long total_size = sizeCalculate(root_ref);
     long branch_child_count = branchChildCount(root_ref);
     long branch_count = branchCount(root_ref);
 
-    System.out.println("Tree height = " + tree_height);
+    System.out.println("Tree height = " + tree_height_local);
     System.out.println("Leaf count = " + leaf_count);
     System.out.println("Branch count = " + branch_count);
     System.out.println("Total byte count = " + total_size);
@@ -3922,7 +3947,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     }
     else {
       TreeLeaf leaf = (TreeLeaf) node;
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       NodeReference ref = leaf.getReference();
       String ref_str;
       if (ref.isSpecial()) {
@@ -3932,10 +3957,10 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       else {
         ref_str = "" + ref;
       }
-      b.append("Leaf Node ( " + left_key + " ) ( " + ref_str + " ) [ ");
-      b.append("size = " + leaf.getSize() + " ");
+      b.append("Leaf Node ( ").append(left_key).append(" ) ( ").append(ref_str).append(" ) [ ");
+      b.append("size = ").append(leaf.getSize()).append(" ");
       for (int i = 0; i < Math.min(leaf.getSize(), 20); ++i) {
-        b.append("" + leaf.get(i));
+        b.append(leaf.get(i));
         b.append(",");
       }
       b.append(" ]\r\n");

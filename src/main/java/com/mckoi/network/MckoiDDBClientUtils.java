@@ -26,12 +26,7 @@
 package com.mckoi.network;
 
 import com.mckoi.util.GeneralParser;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.URL;
 import java.net.URLConnection;
@@ -465,6 +460,7 @@ public class MckoiDDBClientUtils {
     /**
      * Connects this client to the network.
      */
+    @Override
     public void connect() {
       this.proxy_connector = new TCPProxyNetworkConnector(getNetworkPassword());
       this.proxy_connector.connect(proxy_host, proxy_port);
@@ -501,6 +497,7 @@ public class MckoiDDBClientUtils {
     /**
      * Connects this client to the network.
      */
+    @Override
     public void connect() {
       this.proxy_connector = new ProxyNetworkConnector(getNetworkPassword());
       this.proxy_connector.connect(in, out);

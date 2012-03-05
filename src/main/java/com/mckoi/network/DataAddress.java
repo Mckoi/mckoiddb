@@ -120,10 +120,17 @@ public final class DataAddress implements Comparable<DataAddress> {
    * Returns the DataAddress object parsed from the given string.
    */
   public static DataAddress parseString(String str) {
+
+    // Security check,
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) {
+      security.checkPermission(MckoiNetworkPermission.PARSE_DATA_ADDRESS);
+    }
+
     // PENDING SECURITY: This needs to be a protected function that is not
     //   available to user functions. We do not want to allow users to be able
     //   to arbitarily create DataAddress objects because it could be used to
-    //   inspect the contents of a database outside their sandbox.
+    //   inspect the contents of a database outside the snapshot sandbox.
     //
     //   This function does need to be available to be used by low level
     //   operations such as a consensus function.

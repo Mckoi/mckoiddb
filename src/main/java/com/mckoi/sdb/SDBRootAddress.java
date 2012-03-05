@@ -34,7 +34,6 @@ import com.mckoi.network.DataAddress;
  * @author Tobias Downer
  */
 
-// NOT SDBTrustedObject. Exposes SDBSession.
 public class SDBRootAddress {
 
   private final SDBSession session;

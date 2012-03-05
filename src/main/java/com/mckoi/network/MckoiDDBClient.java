@@ -26,7 +26,6 @@
 package com.mckoi.network;
 
 import com.mckoi.data.KeyObjectTransaction;
-import com.mckoi.data.OrderedList64Bit;
 import com.mckoi.data.TreeReportNode;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -103,10 +102,21 @@ public abstract class MckoiDDBClient {
                  String network_password,
                  LocalNetworkCache lnc,
                  long maximum_transaction_node_cache_heap_size) {
+
+    checkPermission(MckoiNetworkPermission.CREATE_MCKOIDDB_CLIENT);
+
     this.network_password = network_password;
     this.manager_addresses = manager_servers;
     this.local_network_cache = lnc;
     this.maximum_transaction_node_cache_heap_size = maximum_transaction_node_cache_heap_size;
+  }
+
+  /**
+   * Security permission check.
+   */
+  private void checkPermission(MckoiNetworkPermission perm) {
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) security.checkPermission(perm);
   }
 
   /**
@@ -143,7 +153,7 @@ public abstract class MckoiDDBClient {
    * use it unless you know what you are doing.
    */
   public NetworkProfile getNetworkProfile(String su_password) {
-    // PENDING SECURITY: This is not a function we should expose to user code
+    // SECURITY: This is not a function we should expose to user code
     //   unless there is some sort of priv check. In the current implementation
     //   the password is meaningless, but a future secure implementation should
     //   require a password or prevent the function working entirely in end-
@@ -244,6 +254,9 @@ public abstract class MckoiDDBClient {
    * use of this information is needed.
    */
   public String[] queryAllNetworkPaths() {
+
+    checkPermission(MckoiNetworkPermission.QUERY_ALL_NETWORK_PATHS);
+
     return tree_system.findAllPaths();
   }
 
@@ -260,32 +273,8 @@ public abstract class MckoiDDBClient {
    * network, an exception is generated.
    */
   public DataAddress getCurrentSnapshot(String path_name) {
-//    // Get the root server for the given path name (found by querying the
-//    // manager server).
-//    ServiceAddress root_address = tree_system.getRootServerFor(path_name);
-//
-//    if (root_address == null) {
-//      throw new RuntimeException(
-//              "There are no root servers in the network for path '" +
-//              path_name + "'");
-//    }
-//
-//    return tree_system.getPathNow(root_address, path_name);
-
     return tree_system.getPathNow(path_name);
-
   }
-
-//  /**
-//   * Returns an historical set of root nodes published to the root server
-//   * between the times given, where the time values follow the conventions of
-//   * System.currentTimeMillis()
-//   */
-//  public DataAddress[] getHistoricalSnapshots(String path_name,
-//                                           long time_start, long time_end) {
-//    return tree_system.getPathHistorical(
-//                             root_address, path_name, time_start, time_end);
-//  }
 
   /**
    * Given a DataAddress of a root node in the network, creates and returns a
@@ -312,8 +301,8 @@ public abstract class MckoiDDBClient {
    * machines and returns a DataAddress of the root node of the flushed
    * data.
    * <p>
-   * The object referenced by the DataAddress is immutible in the sense that
-   * once a DataAddress has been created for a transation it may be passed
+   * The object referenced by the DataAddress is immutable in the sense that
+   * once a DataAddress has been created for a transaction it may be passed
    * around to other clients freely and they may modify the changes but their
    * modifications will not be visible to anyone else.
    */
@@ -333,11 +322,6 @@ public abstract class MckoiDDBClient {
    */
   public DataAddress performCommit(String path_name, DataAddress proposal)
                                                   throws CommitFaultException {
-
-//    // Get the root server for the given path name (found by querying the
-//    // manager server).
-//    ServiceAddress root_address = tree_system.getRootServerFor(path_name);
-
     return tree_system.performCommit(path_name, proposal);
   }
 
@@ -374,6 +358,7 @@ public abstract class MckoiDDBClient {
    */
   public DataAddress[] getHistoricalSnapshots(String path_name,
                                              long time_start, long time_end) {
+
 //    // Get the root server for the given path,
 //    ServiceAddress root_address = tree_system.getRootServerFor(path_name);
 

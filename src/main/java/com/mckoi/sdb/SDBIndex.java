@@ -39,7 +39,7 @@ import java.util.ConcurrentModificationException;
  * @author Tobias Downer
  */
 
-public class SDBIndex implements Iterable<SDBRow>, SDBTrustedObject {
+public class SDBIndex implements Iterable<SDBRow> {
 
   /**
    * The backed table.

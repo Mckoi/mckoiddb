@@ -28,12 +28,7 @@ package com.mckoi.network;
 import com.mckoi.data.NodeReference;
 import com.mckoi.util.StringUtil;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This class enables the discovery of machine roles in a network. It is
@@ -77,6 +72,12 @@ public class NetworkProfile {
    * password.
    */
   public NetworkProfile(NetworkConnector connector, String network_password) {
+
+    // Security check
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) security.checkPermission(
+                                MckoiNetworkPermission.CREATE_NETWORK_PROFILE);
+
 //    machine_list = new HashMap();
     this.network_connector = connector;
     this.network_password = network_password;
@@ -95,79 +96,6 @@ public class NetworkProfile {
 
 
 
-
-
-//  /**
-//   * Given a Reader, extracts details of the network schema configuration.
-//   * This document describes the service address of every node of the network,
-//   * and the name of the server. It does not detail the services each server
-//   * runs, which is queried by asking the machine.
-//   */
-//  public void readNetworkSchema(Reader doc) throws IOException {
-//    // The document is simply formatted as a line deliminated list of servers
-//    // in the network. Each entry is formatted as '[ip]:[port]'
-//    BufferedReader read_in = new BufferedReader(doc);
-//    while (true) {
-//      String line = read_in.readLine();
-//      if (line == null) {
-//        return;
-//      }
-//      // Parse the service address
-//      ServiceAddress saddr = ServiceAddress.parseString(line);
-//
-//      // Add the server into the server map
-//      machine_list.put(saddr, Boolean.TRUE);
-//    }
-//  }
-//
-//  /**
-//   * Writes the details of the network schema configuration out to the given
-//   * Writer object in the same format 'readNetworkSchema' understands.
-//   */
-//  public void writeNetworkSchema(Writer doc) throws IOException {
-//    BufferedWriter write_out = new BufferedWriter(doc);
-//    PrintWriter out = new PrintWriter(write_out);
-//
-//    // Make a list and sort it,
-//    Set<ServiceAddress> server_addresses = machine_list.keySet();
-//    ArrayList<ServiceAddress> slist = new ArrayList();
-//    for (ServiceAddress addr : server_addresses) {
-//      slist.add(addr);
-//    }
-//
-//    // Sort the list of service addresses
-//    Collections.sort(slist);
-//
-//    // And output the sorted list to the writer,
-//    for (ServiceAddress addr : slist) {
-//      out.println(addr.formatString());
-////      InetAddress inet_addr = addr.asInetAddress();
-////      out.print(inet_addr.getCanonicalHostName());
-////      out.print(":");
-////      out.println(addr.getPort());
-//    }
-//
-//    // Flush the buffer
-//    out.flush();
-//  }
-//
-//  /**
-//   * Adds a machine node to the network schema (does nothing if the machine
-//   * already added).
-//   */
-//  public void addMachineNode(ServiceAddress machine) {
-//    machine_list.put(machine, Boolean.TRUE);
-//    refresh();
-//  }
-//
-//  /**
-//   * Removes a machine node from the network schema (does nothing if the
-//   * machine node not in the schema).
-//   */
-//  public void removeMachineNode(ServiceAddress machine) {
-//    machine_list.remove(machine);
-//    refresh();
-//  }
 
   // -----
 

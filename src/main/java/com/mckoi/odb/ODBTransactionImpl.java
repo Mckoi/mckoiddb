@@ -392,6 +392,7 @@ class ODBTransactionImpl implements ODBTransaction {
   /**
    * Returns the path name of the session.
    */
+  @Override
   public String getSessionPathName() {
     return session.getPathName();
   }
@@ -403,6 +404,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * data operations, the transaction must be committed before changes are
    * made permanent.
    */
+  @Override
   public ODBClassCreator getClassCreator() {
     return new ODBClassCreator(this);
   }
@@ -414,6 +416,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Returns the class instance currently defined with the given name, or null
    * if no class currently defined with that name.
    */
+  @Override
   public ODBClass findClass(String class_name) {
     // Query the system class list and get the class with the given name,
     Reference class_ref = getSystemClassList().get(class_name);
@@ -542,6 +545,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * against the given class type. Note that the given arguments may be
    * only either a java.lang.String, a com.mckoi.odb.Reference or null.
    */
+  @Override
   public ODBObject constructObject(ODBClass clazz, Object... args) {
 
     // Create a unique 128-bit reference id for this object,
@@ -555,6 +559,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * <p>
    * Throws NoSuchReferenceException if the reference is invalid.
    */
+  @Override
   public ODBClass getClass(Reference ref) {
 
     ODBClass odb_class = class_cache.get(ref);
@@ -585,6 +590,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * <p>
    * Throws NoSuchReferenceException if the reference is invalid.
    */
+  @Override
   public ODBObject getObject(ODBClass type, Reference ref) {
 
     ODBObject ob;
@@ -672,6 +678,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Adds a named item to the database. A named item is a 'window' or starting
    * point of the object graph.
    */
+  @Override
   public void addNamedItem(String name, ODBObject item) {
 
     Reference named_item_class_ref = item.getODBClass().getReference();
@@ -709,6 +716,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Removes a named item from the database. If the named item isn't defined
    * then returns false, otherwise returns true if the named item was deleted.
    */
+  @Override
   public boolean removeNamedItem(String name) {
 
     return getNamedItemList().remove(name);
@@ -719,6 +727,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Returns a named item from the database, or null if the named item isn't
    * defined.
    */
+  @Override
   public ODBObject getNamedItem(String name) {
 
     // Query the system named item list,
@@ -752,6 +761,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * amount of time a garbage collection cycle can take. This operation should
    * operate incrementally if desired.
    */
+  @Override
   public void doGarbageCollection() {
     throw new UnsupportedOperationException("TODO");
   }
@@ -761,6 +771,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Changes to the list of named items is immediately reflected in the
    * returned object, however the returned list itself is immutable.
    */
+  @Override
   public List<String> getNamedItemsList() {
     return new ODBTransactionImpl.FirstFieldObjectList(ODBClasses.NAMER, getNamedItemList());
   }
@@ -770,6 +781,7 @@ class ODBTransactionImpl implements ODBTransaction {
    * Changes to the classes defined is immediately reflected in the
    * returned object, however the returned list itself is immutable.
    */
+  @Override
   public List<String> getClassNamesList() {
     return new ODBTransactionImpl.FirstFieldObjectList(
                                        ODBClasses.CLASS, getSystemClassList());
@@ -779,6 +791,7 @@ class ODBTransactionImpl implements ODBTransaction {
   /**
    * Commits any changes made in this transaction.
    */
+  @Override
   public ODBRootAddress commit() throws CommitFaultException {
 
     // We prepare the transaction data log for the consensus function as

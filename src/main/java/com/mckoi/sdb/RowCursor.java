@@ -38,7 +38,7 @@ import java.util.ListIterator;
  * @author Tobias Downer
  */
 
-public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
+public class RowCursor implements ListIterator<SDBRow> {
 
   private final SDBTable table;
   private final long table_version;
@@ -95,6 +95,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
    * Returns true if a call to 'next' will be able to return the next value in
    * the list.
    */
+  @Override
   public boolean hasNext() {
     versionCheck();
     return iterator.hasNext();
@@ -104,6 +105,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
    * Returns true if a call to 'previous' will be able to return the previous
    * value in the list.
    */
+  @Override
   public boolean hasPrevious() {
     versionCheck();
     return iterator.hasPrevious();
@@ -113,6 +115,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
    * Moves the cursor to the next position in the list and returns the SDBRow
    * at the new position.
    */
+  @Override
   public SDBRow next() {
     versionCheck();
     long rowid = iterator.next();
@@ -122,6 +125,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
   /**
    * Returns the position of the next value in the list.
    */
+  @Override
   public int nextIndex() {
     versionCheck();
     return (int) (iterator.position() + 1);
@@ -131,6 +135,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
    * Moves the cursor to the previous position in the list and returns the
    * SDBRow at the new position.
    */
+  @Override
   public SDBRow previous() {
     versionCheck();
     long rowid = iterator.previous();
@@ -140,6 +145,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
   /**
    * Returns the position of the previous value in the list.
    */
+  @Override
   public int previousIndex() {
     versionCheck();
     return (int) (iterator.position() - 1);
@@ -149,6 +155,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
   /**
    * This operation is currently not available in RowCursor.
    */
+  @Override
   public void remove() {
     // Methods that mutate the index are not supported,
     throw new UnsupportedOperationException();
@@ -157,6 +164,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
   /**
    * Operation not supported in RowCursor.
    */
+  @Override
   public void add(SDBRow e) {
     // Methods that mutate the index are not supported,
     throw new UnsupportedOperationException();
@@ -165,6 +173,7 @@ public class RowCursor implements ListIterator<SDBRow>, SDBTrustedObject {
   /**
    * Operation not supported in RowCursor.
    */
+  @Override
   public void set(SDBRow e) {
     // Methods that mutate the index are not supported,
     throw new UnsupportedOperationException();

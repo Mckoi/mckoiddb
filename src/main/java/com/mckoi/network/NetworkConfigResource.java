@@ -26,11 +26,7 @@
 package com.mckoi.network;
 
 import com.mckoi.util.StringUtil;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -74,7 +70,7 @@ public abstract class NetworkConfigResource {
   /**
    * The logger.
    */
-  protected final Logger log;
+  private final Logger log;
 
   /**
    * The modification time of the configuration resource the last time it
@@ -114,6 +110,14 @@ public abstract class NetworkConfigResource {
    * Constructor.
    */
   public NetworkConfigResource() {
+
+    // Security check,
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) {
+      security.checkPermission(
+                        MckoiNetworkPermission.CREATE_NETWORK_CONFIG_RESOURCE);
+    }
+
     this.log = Logger.getLogger("com.mckoi.network.Log");
   }
 
@@ -318,6 +322,7 @@ public abstract class NetworkConfigResource {
     private Properties properties;
 
     URLNetworkConfigResource(URL url) {
+      super();
       this.url = url;
     }
 
@@ -355,6 +360,7 @@ public abstract class NetworkConfigResource {
     private final File file;
 
     FileNetworkConfigResource(File file) {
+      super();
       this.file = file;
     }
 
