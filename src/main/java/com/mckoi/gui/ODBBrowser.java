@@ -30,15 +30,10 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
-import javax.swing.JButton;
-import javax.swing.JEditorPane;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextField;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.event.HyperlinkEvent.EventType;
 import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkEvent.EventType;
 import javax.swing.event.HyperlinkListener;
 
 /**
@@ -216,12 +211,10 @@ public class ODBBrowser extends JPanel {
     // Create a formatter object,
     ODBHTMLFormatter formatter = new ODBHTMLFormatter(transaction, "");
 
+    // Decode the location,
+    String decoded_location = location.replace("%23", "#");
 
-
-
-
-
-    view_pane.setText(formatter.format(location));
+    view_pane.setText(formatter.format(decoded_location));
     view_pane.setCaretPosition(0);
 
   }

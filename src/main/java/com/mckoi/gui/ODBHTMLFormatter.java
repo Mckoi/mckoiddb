@@ -25,12 +25,7 @@
 
 package com.mckoi.gui;
 
-import com.mckoi.odb.ODBClass;
-import com.mckoi.odb.ODBData;
-import com.mckoi.odb.ODBList;
-import com.mckoi.odb.ODBObject;
-import com.mckoi.odb.ODBTransaction;
-import com.mckoi.odb.Reference;
+import com.mckoi.odb.*;
 
 /**
  * Utility class that formats ODB elements in HTML format for use in a
@@ -45,7 +40,7 @@ public class ODBHTMLFormatter {
   /**
    * The maximum size of strings displayed inline in a table.
    */
-  private static int STRING_MAX_SIZE = 24;
+  private static int STRING_MIN_SIZE = 24;
 
 
   /**
@@ -242,8 +237,9 @@ public class ODBHTMLFormatter {
     ODBClass odb_class = getClassFromString(class_string);
     ODBObject odb_object = transaction.getObject(odb_class, object_ref);
 
+    String encoded_class_string = class_string.replace("#", "%23");
     final String instance_string =
-                             "instance:" + class_string + ":" + obj_ref_string;
+                     "instance:" + encoded_class_string + ":" + obj_ref_string;
 
     if (field_val == null) {
       // The base object,
@@ -302,15 +298,19 @@ public class ODBHTMLFormatter {
         final ODBList list = odb_object.getList(field_index);
 
         ODBListModel list_model = new ODBListModel() {
+          @Override
           public ODBObject getElement(int n) {
             return list.getObject(n);
           }
+          @Override
           public ODBClass getElementClass() {
             return list.getElementClass();
           }
+          @Override
           public Reference getElementReference(int n) {
             return list.get(n);
           }
+          @Override
           public int size() {
             long sz = list.size();
             return sz > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) sz;
@@ -338,6 +338,10 @@ public class ODBHTMLFormatter {
   private String classHref(ODBClass member) {
     String out;
     String class_str = member.getInstanceName();
+    
+    // Replace hash char,
+    class_str = class_str.replace("#", "%23");
+
     out = "<a href=\"" + hyperlink_prepend
             + "class:" + class_str + "\">"
             + member.getName() + "</a>";
@@ -360,6 +364,10 @@ public class ODBHTMLFormatter {
     String class_str = ob.getODBClass().getInstanceName();
     String ob_ref_str = ob.getReference().toString();
     ODBClass member = getClassFromString(class_str);
+
+    // Replace hash char,
+    class_str = class_str.replace("#", "%23");
+
     out = "<a href=\"" + hyperlink_prepend +
           "instance:" + class_str + ":" +
           ob_ref_str + "\">[" +
@@ -373,6 +381,10 @@ public class ODBHTMLFormatter {
     String class_str = ob.getODBClass().getInstanceName();
     String ob_ref_str = ob.getReference().toString();
 //    ODBClass member = getClassFromString(class_str);
+
+    // Replace hash char,
+    class_str = class_str.replace("#", "%23");
+
     out = "<a href=\"" + hyperlink_prepend +
           "instance:" + class_str + ":" +
           ob_ref_str + "\">" + ob_ref_str + "</a>";
@@ -412,10 +424,12 @@ public class ODBHTMLFormatter {
     }
 
     HTMLUtils.PageLinkRenderer renderer = new HTMLUtils.PageLinkRenderer() {
+      @Override
       public void render(StringBuilder out, long page_number, long page_size,
                          boolean is_current) {
         if (!is_current) {
           out.append("<a href=\"");
+          out.append(hyperlink_prepend);
           out.append(instance_string);
           out.append("?pos=");
           out.append(page_number * page_size);
@@ -449,7 +463,7 @@ public class ODBHTMLFormatter {
     long dpos = pos * LINE_BYTESIZE;
     long dcap = dpos + (LINE_BYTESIZE * page_size);
 
-    b.append("<table cellspacing=\"12\"><tr>");
+    b.append("<table class=\"data\" cellspacing=\"12\"><tr>");
     // The line index
     b.append("<td style=\"white-space: nowrap\"><pre>");
     for (long i = dpos; i < dsize && i < dcap; i += LINE_BYTESIZE) {
@@ -556,10 +570,12 @@ public class ODBHTMLFormatter {
     int field_count = elem_class.getFieldCount();
 
     HTMLUtils.PageLinkRenderer renderer = new HTMLUtils.PageLinkRenderer() {
+      @Override
       public void render(StringBuilder out, long page_number, long page_size,
                          boolean is_current) {
         if (!is_current) {
           out.append("<a href=\"");
+          out.append(hyperlink_prepend);
           out.append(instance_string);
           out.append("?pos=");
           out.append(page_number * page_size);
@@ -606,61 +622,73 @@ public class ODBHTMLFormatter {
       }
       b.append("</td>");
 
-      for (int i = 0; i < field_count; ++i) {
-        b.append("<td border=\"1\" style=\"white-space: nowrap\">");
-        String field_type = elem_class.getFieldType(i);
-        if (field_type.equals("[S")) {
-          String str_val = ob.getString(i);
-          if (str_val == null) {
-            b.append("null");
+      // Calculate a decent value for the column size,
+      if (field_count > 0) {
+        int col_size = 100 / field_count;
+        col_size = Math.max(col_size, STRING_MIN_SIZE);
+
+        for (int i = 0; i < field_count; ++i) {
+          b.append("<td border=\"1\" style=\"white-space: nowrap\">");
+          String field_type = elem_class.getFieldType(i);
+          if (field_type.equals("[S")) {
+            String str_val = ob.getString(i);
+            if (str_val == null) {
+              b.append("null");
+            }
+            else if(str_val.length() > col_size) {
+              b.append(HTMLUtils.htmlify(str_val.substring(0, col_size)));
+              String href_text = "...";
+              String class_str = ob.getODBClass().getInstanceName();
+              class_str = class_str.replace("#", "%23");
+              String out = "<a href=\"" + hyperlink_prepend +
+                          "instance:" + class_str +
+                          ":" + ob.getReference().toString() + "!" +
+                          elem_class.getFieldName(i) +
+                          "\">" + href_text + "</a>";
+              b.append(out);
+            }
+            else {
+              b.append(str_val);
+            }
           }
-          else if(str_val.length() > STRING_MAX_SIZE) {
-            b.append(HTMLUtils.htmlify(str_val.substring(0, STRING_MAX_SIZE)));
-            String href_text = "...";
+          else if (field_type.startsWith("[L")) {
+            ODBList list = ob.getList(i);
+            ODBClass sub_elem_class = list.getElementClass();
+            b.append("List&lt;");
+            b.append(classHref(sub_elem_class));
+            b.append("&gt; ");
+            long slist_size = list.size();
+            String pl = slist_size == 1 ? " element" : " elements";
+            String href_text = HTMLUtils.htmlify("(" + slist_size + pl + ")");
+            String class_str = ob.getODBClass().getInstanceName();
+            class_str = class_str.replace("#", "%23");
             String out = "<a href=\"" + hyperlink_prepend +
-                         "instance:" + ob.getODBClass().getInstanceName() +
-                         ":" + ob.getReference().toString() + "!" +
-                         elem_class.getFieldName(i) +
-                         "\">" + href_text + "</a>";
+                        "instance:" + class_str +
+                        ":" + ob.getReference().toString() + "!" +
+                        elem_class.getFieldName(i) +
+                        "\">" + href_text + "</a>";
+
+            b.append(out);
+          }
+          else if (field_type.startsWith("[D")) {
+            ODBData data = ob.getData(i);
+            String href_text =
+                      HTMLUtils.htmlify("Data <size = " + data.size() + ">");
+            String class_str = ob.getODBClass().getInstanceName();
+            class_str = class_str.replace("#", "%23");
+            String out = "<a href=\"" + hyperlink_prepend +
+                        "instance:" + class_str +
+                        ":" + ob.getReference().toString() + "!" +
+                        elem_class.getFieldName(i) +
+                        "\">" + href_text + "</a>";
+
             b.append(out);
           }
           else {
-            b.append(str_val);
+            b.append(objectHref(ob.getObject(i)));
           }
+          b.append("</td>");
         }
-        else if (field_type.startsWith("[L")) {
-          ODBList list = ob.getList(i);
-          ODBClass sub_elem_class = list.getElementClass();
-          b.append("List&lt;");
-          b.append(classHref(sub_elem_class));
-          b.append("&gt; ");
-          long slist_size = list.size();
-          String pl = slist_size == 1 ? " element" : " elements";
-          String href_text = HTMLUtils.htmlify("(" + slist_size + pl + ")");
-          String out = "<a href=\"" + hyperlink_prepend +
-                       "instance:" + ob.getODBClass().getInstanceName() +
-                       ":" + ob.getReference().toString() + "!" +
-                       elem_class.getFieldName(i) +
-                       "\">" + href_text + "</a>";
-
-          b.append(out);
-        }
-        else if (field_type.startsWith("[D")) {
-          ODBData data = ob.getData(i);
-          String href_text =
-                     HTMLUtils.htmlify("Data <size = " + data.size() + ">");
-          String out = "<a href=\"" + hyperlink_prepend +
-                       "instance:" + ob.getODBClass().getInstanceName() +
-                       ":" + ob.getReference().toString() + "!" +
-                       elem_class.getFieldName(i) +
-                       "\">" + href_text + "</a>";
-
-          b.append(out);
-        }
-        else {
-          b.append(objectHref(ob.getObject(i)));
-        }
-        b.append("</td>");
       }
 
       b.append("</tr>");
