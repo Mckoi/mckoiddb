@@ -601,7 +601,7 @@ public class ODBHTMLFormatter {
       b.append("<br/><br/>");
     }
 
-    b.append("<table cellspacing=\"0\" cellpadding=\"4\"><tr>");
+    b.append("<table class=\"oblist\" cellspacing=\"0\" cellpadding=\"4\"><tr>");
     b.append("<th>#</th>");
     // The header,
     for (int i = 0; i < field_count; ++i) {

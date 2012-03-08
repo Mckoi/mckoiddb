@@ -114,13 +114,16 @@ public final class ODBSession {
   /**
    * Returns an ODBTransaction object based on the given root.
    */
-  private ODBTransaction createTransaction(DataAddress base_root) {
+  private ODBTransaction createTransaction(
+                                    DataAddress base_root, boolean read_only) {
     // Turn it into a transaction object,
     KeyObjectTransaction transaction = db_client.createTransaction(base_root);
     // Check the path is a valid ODBTransaction format,
     checkPathValid(transaction);
     // Wrap it around an ODBTransaction object, and return it
-    return new ODBTransactionImpl(this, base_root, transaction);
+    ODBTransactionImpl odb_t =
+               new ODBTransactionImpl(this, base_root, transaction, read_only);
+    return odb_t;
   }
 
   /**
@@ -138,7 +141,7 @@ public final class ODBSession {
   public ODBTransaction createTransaction(ODBRootAddress root_address) {
     // Check the root address session is the same as this object,
     if (root_address.getSession().equals(this)) {
-      return createTransaction(root_address.getDataAddress());
+      return createTransaction(root_address.getDataAddress(), false);
     }
     else {
       throw new RuntimeException("root_address is not from this session");
@@ -155,6 +158,40 @@ public final class ODBSession {
    */
   public ODBTransaction createTransaction() {
     return createTransaction(getCurrentSnapshot());
+  }
+
+  /**
+   * Returns a read-only ODBTransaction object based on the data in the given
+   * root address. This method is useful for reducing the amount of traffic
+   * on the network needed to check if an instance path has changed. Many
+   * applications do not always need to fetch the most current
+   * snapshot when reading data because it doesn't matter if the information
+   * is slightly out of date.
+   * <p>
+   * This method allows a client to decide for itself when it wants to check
+   * if the state of a database has been updated, and allows reusing the
+   * old snapshot views when it is appropriate to do so.
+   */
+  public ODBTransaction createReadOnlyTransaction(ODBRootAddress root_address) {
+    // Check the root address session is the same as this object,
+    if (root_address.getSession().equals(this)) {
+      return createTransaction(root_address.getDataAddress(), true);
+    }
+    else {
+      throw new RuntimeException("root_address is not from this session");
+    }
+  }
+
+  /**
+   * Creates a current snapshot transaction object used for accessing and
+   * modifying this Object Database path instance. This method will query the
+   * network and fetch the latest version of the path instance from the root
+   * server.
+   * <p>
+   * This is the same as calling 'createTransaction(getCurrentSnapshot())'.
+   */
+  public ODBTransaction createReadOnlyTransaction() {
+    return createReadOnlyTransaction(getCurrentSnapshot());
   }
 
   /**

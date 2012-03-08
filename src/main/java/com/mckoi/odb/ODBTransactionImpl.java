@@ -67,6 +67,11 @@ class ODBTransactionImpl implements ODBTransaction {
   private ObjectLog log;
 
   /**
+   * If true, the transaction does not permit changes or commits.
+   */
+  private final boolean read_only;
+
+  /**
    * Set to true when this transaction object is invalidated.
    */
   private boolean invalidated = false;
@@ -126,22 +131,31 @@ class ODBTransactionImpl implements ODBTransaction {
    * Constructor.
    */
   ODBTransactionImpl(ODBSession session,
-                     DataAddress base_root, KeyObjectTransaction transaction) {
+                     DataAddress base_root, KeyObjectTransaction transaction,
+                     boolean read_only) {
 
     this.session = session;
     this.base_root = base_root;
     this.transaction = transaction;
+    this.read_only = read_only;
 
   }
 
-
+  /**
+   * Returns read or write mode depending on the 'read_only' flag.
+   */
+  private char getReadWriteMode() {
+    return read_only ? 'r' : 'w';
+  }
 
   /**
    * Returns an OrderedReferenceList that is the currently stored class
    * list.
    */
   OrderedReferenceList getSystemClassList() {
-    DataFile data = transaction.getDataFile(SYS_CLASSES_LIST, 'w');
+
+    char rw_mode = getReadWriteMode();
+    DataFile data = transaction.getDataFile(SYS_CLASSES_LIST, rw_mode);
 
     SimpleClass sys_class_ob = new SimpleClass("SYS CLASS LIST",
                                       "#SYS CLASS LIST", SYS_CLASS_REFERENCE);
@@ -156,7 +170,9 @@ class ODBTransactionImpl implements ODBTransaction {
    * list.
    */
   OrderedReferenceList getNamedItemList() {
-    DataFile data = transaction.getDataFile(SYS_NAMER_LIST, 'w');
+
+    char rw_mode = getReadWriteMode();
+    DataFile data = transaction.getDataFile(SYS_NAMER_LIST, rw_mode);
 
     SimpleClass sys_class_ob = new SimpleClass("SYS NAMED ITEM LIST",
                                  "#SYS NAMED ITEM LIST", SYS_NAMER_REFERENCE);
@@ -171,7 +187,7 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   ObjectLog getObjectLog() {
     if (log == null) {
-      log = new ObjectLog(transaction, false);
+      log = new ObjectLog(transaction, false, getReadWriteMode());
     }
     return log;
   }
@@ -181,7 +197,7 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   ObjectLog getProposedObjectLog() {
     if (log == null) {
-      log = new ObjectLog(transaction, true);
+      log = new ObjectLog(transaction, true, getReadWriteMode());
     }
     return log;
   }
@@ -193,7 +209,8 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   boolean hasClassDirectoryEntry(String class_str) {
 
-    DataFile cr_map = transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, 'w');
+    DataFile cr_map =
+          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
     OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
@@ -240,7 +257,8 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   Reference getReferenceFromClassDictionary(String class_str) {
 
-    DataFile cr_map = transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, 'w');
+    DataFile cr_map =
+          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
     OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
@@ -288,7 +306,8 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   String getTypeStringFromClassDictionary(Reference ref) {
 
-    DataFile cr_map = transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, 'w');
+    DataFile cr_map =
+          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
     OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
@@ -335,7 +354,8 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   void addToClassDictionary(String type_str, Reference ref) {
 
-    DataFile cr_map = transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, 'w');
+    DataFile cr_map =
+          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
     OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
@@ -448,7 +468,8 @@ class ODBTransactionImpl implements ODBTransaction {
    * returns a materialization of the object. Note that the given arguments
    * may be only either a java.lang.String, a com.mckoi.odb.Reference or null.
    */
-  ODBObject constructObject(ODBClass clazz, Reference obj_ref, Object... args) {
+  private ODBObject constructObject(
+                           ODBClass clazz, Reference obj_ref, Object... args) {
 
     // Records the external resource constructions,
     ArrayList external_data_alloc = new ArrayList(4);
@@ -681,6 +702,9 @@ class ODBTransactionImpl implements ODBTransaction {
   @Override
   public void addNamedItem(String name, ODBObject item) {
 
+    // Null check,
+    if (name == null) throw new NullPointerException("name");
+
     Reference named_item_class_ref = item.getODBClass().getReference();
     Reference named_item_ref = item.getReference();
 
@@ -794,6 +818,9 @@ class ODBTransactionImpl implements ODBTransaction {
   @Override
   public ODBRootAddress commit() throws CommitFaultException {
 
+    // Read only check,
+    if (read_only) throw new UnsupportedOperationException();
+
     // We prepare the transaction data log for the consensus function as
     // follows;
     // 1) Any lists that have changed are noted,
@@ -826,7 +853,8 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   void updateResourceLookupManager(Key max_key) {
 
-    DataFile counter = transaction.getDataFile(RESOURCE_COUNTER_KEY, 'w');
+    DataFile counter =
+            transaction.getDataFile(RESOURCE_COUNTER_KEY, getReadWriteMode());
 
     // Update the counter file,
     counter.position(0);
@@ -864,8 +892,10 @@ class ODBTransactionImpl implements ODBTransaction {
     Key new_key = destination.allocateKeyForReference(resource_ref);
 
     // Copy the DataFile content,
-    DataFile src_file = transaction.getDataFile(resource_key, 'w');
-    DataFile dst_file = destination.transaction.getDataFile(new_key, 'w');
+    DataFile src_file =
+              transaction.getDataFile(resource_key, getReadWriteMode());
+    DataFile dst_file =
+              destination.transaction.getDataFile(new_key, getReadWriteMode());
 
     // Assert that the destination is empty,
     if (dst_file.size() != 0) {
@@ -892,8 +922,10 @@ class ODBTransactionImpl implements ODBTransaction {
                      Reference resource_ref, Key resource_key) {
 
     // Copy the DataFile content,
-    DataFile src_file = transaction.getDataFile(resource_key, 'w');
-    DataFile dst_file = destination.transaction.getDataFile(resource_key, 'w');
+    DataFile src_file =
+         transaction.getDataFile(resource_key, getReadWriteMode());
+    DataFile dst_file =
+         destination.transaction.getDataFile(resource_key, getReadWriteMode());
 
     // Assert that the destination is empty,
     if (dst_file.size() != 0) {
@@ -905,8 +937,8 @@ class ODBTransactionImpl implements ODBTransaction {
     dst_file.replicateFrom(src_file);
 
     // Update the lookup table in the destination,
-    DataFile lookup_table =
-                destination.transaction.getDataFile(RESOURCE_LOOKUP_KEY, 'w');
+    DataFile lookup_table = destination.transaction.getDataFile(
+                                      RESOURCE_LOOKUP_KEY, getReadWriteMode());
     // The structure for recording lookup data,
     ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
     // Put the association in the map,
@@ -931,12 +963,13 @@ class ODBTransactionImpl implements ODBTransaction {
 
     // The source list data,
     Key src_list_key = dereferenceToList(list_reference);
-    DataFile src_list_data = transaction.getDataFile(src_list_key, 'w');
+    DataFile src_list_data =
+                     transaction.getDataFile(src_list_key, getReadWriteMode());
 
     // The destination list data,
     Key dst_list_key = destination.dereferenceToList(list_reference);
-    DataFile dst_list_data =
-                       destination.transaction.getDataFile(dst_list_key, 'w');
+    DataFile dst_list_data = destination.transaction.getDataFile(
+                                             dst_list_key, getReadWriteMode());
 
     // Copy the list data,
     dst_list_data.replicateFrom(src_list_data);
@@ -960,13 +993,14 @@ class ODBTransactionImpl implements ODBTransaction {
     Key bucket_key = dereferenceToBucket(object_class_ref);
     // Turn it into an OrderedSetData object,
     OrderedSetData dst_bucket_set = new OrderedSetData(
-                 transaction.getDataFile(bucket_key, 'w'), object_comparator);
+               transaction.getDataFile(bucket_key, getReadWriteMode()),
+                                                           object_comparator);
 
     // The source bucket set,
     Key src_bucket_key = from_transaction.dereferenceToBucket(object_class_ref);
     OrderedSetData src_bucket_set = new OrderedSetData(
-                from_transaction.transaction.getDataFile(src_bucket_key, 'w'),
-                                                            object_comparator);
+                from_transaction.transaction.getDataFile(
+                      src_bucket_key, getReadWriteMode()), object_comparator);
 
     try {
 
@@ -1017,12 +1051,13 @@ class ODBTransactionImpl implements ODBTransaction {
 
     // The source data,
     Key src_list_key = from_transaction.dereferenceToList(data_reference);
-    DataFile src_data =
-                 from_transaction.transaction.getDataFile(src_list_key, 'w');
+    DataFile src_data = from_transaction.transaction.getDataFile(
+                                            src_list_key, getReadWriteMode());
 
     // The destination data,
     Key dst_data_key = dereferenceToList(data_reference);
-    DataFile dst_data = transaction.getDataFile(dst_data_key, 'w');
+    DataFile dst_data = transaction.getDataFile(
+                                            dst_data_key, getReadWriteMode());
 
     // Copy the data,
     dst_data.replicateFrom(src_data);
@@ -1097,8 +1132,10 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   Key allocateKeyForReference(Reference ref) {
 
-    DataFile lookup_table = transaction.getDataFile(RESOURCE_LOOKUP_KEY, 'w');
-    DataFile counter = transaction.getDataFile(RESOURCE_COUNTER_KEY, 'w');
+    DataFile lookup_table =
+            transaction.getDataFile(RESOURCE_LOOKUP_KEY, getReadWriteMode());
+    DataFile counter =
+            transaction.getDataFile(RESOURCE_COUNTER_KEY, getReadWriteMode());
 
     // The structure for recording lookup data,
     ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
@@ -1142,7 +1179,8 @@ class ODBTransactionImpl implements ODBTransaction {
    * reference can not be dereferenced.
    */
   private Key dereference(Reference ref) {
-    DataFile lookup_table = transaction.getDataFile(RESOURCE_LOOKUP_KEY, 'w');
+    DataFile lookup_table =
+              transaction.getDataFile(RESOURCE_LOOKUP_KEY, getReadWriteMode());
     ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
     Key key = lookup_sdata.get(ref);
     
@@ -1254,16 +1292,11 @@ class ODBTransactionImpl implements ODBTransaction {
     Reference reference = clazz.getReference();
     Key bucket_key = dereferenceToBucket(reference);
 
-//    // Turn it into an OrderedSetData object,
-//    return new OrderedSetData(
-//               transaction.getDataFile(bucket_key, 'w'), object_comparator);
-
     // Fetch from the cache,
     OrderedSetData list = bucket_cache.get(bucket_key);
     if (list == null) {
-      DataFile list_df = transaction.getDataFile(bucket_key, 'w');
-//      DataFile list_df = new BufferedDataFile(
-//                                  transaction.getDataFile(bucket_key, 'w'));
+      DataFile list_df =
+                      transaction.getDataFile(bucket_key, getReadWriteMode());
       list = new OrderedSetData(list_df, object_comparator);
       bucket_cache.put(bucket_key, list);
     }
@@ -1587,7 +1620,7 @@ class ODBTransactionImpl implements ODBTransaction {
 
     // The list data file,
     Key list_key = dereferenceToList(list_reference);
-    DataFile list_data = transaction.getDataFile(list_key, 'w');
+    DataFile list_data = transaction.getDataFile(list_key, getReadWriteMode());
     ODBClass list_class = getListClass(list_type_str);
 
     // The list object,
@@ -1604,7 +1637,8 @@ class ODBTransactionImpl implements ODBTransaction {
 
     // The data file,
     Key data_key = dereferenceToResource(data_reference);
-    AddressableDataFile data = transaction.getDataFile(data_key, 'w');
+    AddressableDataFile data =
+                         transaction.getDataFile(data_key, getReadWriteMode());
 
     // The data object,
     return new Data(ODBTransactionImpl.this, data_reference, data);

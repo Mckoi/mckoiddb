@@ -2035,7 +2035,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 
       // All key types above 0x07F80 are reserved for system data
       if (outOfUserDataRange(key)) {
-        throw new RuntimeException("Key is reserved for system data.");
+        throw new DataAccessException("Key is reserved for system data.");
       }
       // If the key exists, the position will be >= 0
 //      return (keyEndPosition(Key.HEAD_KEY, key, 0, root_node_ref, 0) >= 0);
@@ -2321,10 +2321,10 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       // Generate exception if this is read-only.
       // Either the transaction is read only or the file is read only
       if (read_only) {
-        throw new RuntimeException("Read only transaction.");
+        throw new DataAccessException("Read only transaction.");
       }
       if (file_read_only) {
-        throw new RuntimeException("Read only data file.");
+        throw new DataAccessException("Read only data file.");
       }
 
       // On writing, we update the versions
@@ -2600,11 +2600,13 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 //        System.out.println("position = " + position);
 //        System.out.println("start = " + start);
 //        System.out.println("end = " + end);
-        throw new RuntimeException("Position is out of bounds.");
+        throw new DataPositionOutOfBoundsException(
+                                      "Position is out of bounds.");
       }
       // Make sure the ending position can't be before the start
       if (end_pos < start) {
-        throw new RuntimeException("Can't shift to before start boundary.");
+        throw new DataPositionOutOfBoundsException(
+                                      "Can't shift to before start boundary.");
       }
       stack.shiftData(key, position, shift_offset);
       end += shift_offset;
@@ -3389,7 +3391,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     private void initWrite() {
       // Generate exception if the backed transaction is read-only.
       if (read_only) {
-        throw new RuntimeException("Read only transaction.");
+        throw new DataAccessException("Read only transaction.");
       }
 
       // On writing, we update the versions

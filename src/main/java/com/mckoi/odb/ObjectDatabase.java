@@ -135,7 +135,7 @@ public class ObjectDatabase implements ConsensusProcessor {
       // Turn the proposal into a proposed ODBTransaction object,
       KeyObjectTransaction t = connection.createTransaction(proposal);
       ODBTransactionImpl proposed_transaction =
-                                    new ODBTransactionImpl(null, proposal, t);
+                              new ODBTransactionImpl(null, proposal, t, false);
 
       // The transaction log,
       ObjectLog object_log = proposed_transaction.getProposedObjectLog();
@@ -180,7 +180,7 @@ public class ObjectDatabase implements ConsensusProcessor {
         KeyObjectTransaction current_t =
                                    connection.createTransaction(current_root);
         ODBTransactionImpl current_transaction =
-                        new ODBTransactionImpl(null, current_root, current_t);
+                  new ODBTransactionImpl(null, current_root, current_t, false);
 
         // There are roots, so we need to go through a merge process and
         // create a new proposal and ensure it is consistent.
@@ -222,7 +222,7 @@ public class ObjectDatabase implements ConsensusProcessor {
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
           ODBTransactionImpl root_transaction =
-                                        new ODBTransactionImpl(null, root, rt);
+                                 new ODBTransactionImpl(null, root, rt, false);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
@@ -305,7 +305,7 @@ public class ObjectDatabase implements ConsensusProcessor {
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
           ODBTransactionImpl root_transaction =
-                                        new ODBTransactionImpl(null, root, rt);
+                                 new ODBTransactionImpl(null, root, rt, false);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
@@ -383,7 +383,7 @@ public class ObjectDatabase implements ConsensusProcessor {
         for (DataAddress root : roots) {
           KeyObjectTransaction rt = connection.createTransaction(root);
           ODBTransactionImpl root_transaction =
-                                       new ODBTransactionImpl(null, root, rt);
+                                 new ODBTransactionImpl(null, root, rt, false);
 
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();

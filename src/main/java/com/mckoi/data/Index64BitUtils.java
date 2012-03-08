@@ -154,19 +154,23 @@ public class Index64BitUtils {
       pos = 0;
     }
 
+    @Override
     public long size() {
       return count * 8;
     }
+    @Override
     public void position(long position) {
       pos = (int) (position / 8);
     }
+    @Override
     public long position() {
       return pos;
     }
 
+    @Override
     public long getLong() {
       if (pos < 0 || pos >= count) {
-        throw new RuntimeException("Position out of bounds");
+        throw new DataPositionOutOfBoundsException("Position out of bounds");
       }
       
       long v = arr[pos];
@@ -174,29 +178,32 @@ public class Index64BitUtils {
       return v;
     }
 
+    @Override
     public void setSize(long size) {
       int sz = (int) (size / 8);
       if (sz < 0) {
-        throw new RuntimeException("size < 0");
+        throw new DataPositionOutOfBoundsException("size < 0");
       }
       if (sz > arr.length) {
-        throw new RuntimeException("New size exceeds backed array size.");
+        throw new DataPositionOutOfBoundsException("New size exceeds backed array size.");
       }
       count = sz;
     }
     
+    @Override
     public void delete() {
       setSize(0);
     }
 
+    @Override
     public void shift(long offset) {
       int dif = (int) (offset / 8);
       int fin_p = count + dif;
       if (fin_p < 0 || fin_p > arr.length) {
-        throw new RuntimeException("Shift out of bounds");
+        throw new DataPositionOutOfBoundsException("Shift out of bounds");
       }
       if (pos > count) {
-        throw new RuntimeException("Position out of bounds");
+        throw new DataPositionOutOfBoundsException("Position out of bounds");
       }
       if (pos < count) {
         if (dif > 0) {
@@ -209,10 +216,11 @@ public class Index64BitUtils {
       count += dif;
     }
 
+    @Override
     public void putLong(long l) {
       if (pos == count) {
         if (pos >= arr.length) {
-          throw new RuntimeException("New size exceeds backed array size.");
+          throw new DataPositionOutOfBoundsException("New size exceeds backed array size.");
         }
         ++count;
       }

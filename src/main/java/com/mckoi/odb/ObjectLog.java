@@ -52,6 +52,7 @@ class ObjectLog {
    */
   private final KeyObjectTransaction transaction;
   private final boolean use_existing;
+  private final char rw_mode;
 
   private OrderedSetData sorted_log;
 
@@ -61,9 +62,11 @@ class ObjectLog {
   /**
    * Constructor.
    */
-  ObjectLog(KeyObjectTransaction transaction, boolean use_existing) {
+  ObjectLog(KeyObjectTransaction transaction, boolean use_existing,
+            char rw_mode) {
     this.transaction = transaction;
     this.use_existing = use_existing;
+    this.rw_mode = rw_mode;
   }
 
   /**
@@ -74,7 +77,7 @@ class ObjectLog {
     if (sorted_log == null) {
       // We need to create the sorted_log entry,
       DataFile log_file = transaction.getDataFile(
-                                  ODBTransactionImpl.TRANSACTION_LOG_KEY, 'w');
+                              ODBTransactionImpl.TRANSACTION_LOG_KEY, rw_mode);
       if (!use_existing) {
         // If we are not using an existing log, we need to clear any existing
         // entries.
@@ -708,7 +711,7 @@ class ObjectLog {
   void flush(DataAddress base_root) {
     // Update the transaction properties,
     DataFile dfile = transaction.getDataFile(
-                           ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, 'w');
+                       ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, rw_mode);
     PropertySet pset = new PropertySet(dfile);
     if (base_root == null) {
       pset.setProperty("B", null);
@@ -725,7 +728,7 @@ class ObjectLog {
    */
   DataAddress getBaseRoot() {
     DataFile dfile = transaction.getDataFile(
-                           ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, 'w');
+                       ODBTransactionImpl.TRANSACTION_PROPERTIES_KEY, rw_mode);
     PropertySet pset = new PropertySet(dfile);
     String base_root_str = pset.getProperty("B");
     if (base_root_str == null) {

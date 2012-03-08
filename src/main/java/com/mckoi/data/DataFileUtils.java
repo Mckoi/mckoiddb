@@ -131,6 +131,7 @@ public final class DataFileUtils {
       this.marked_position = 0;
     }
 
+    @Override
     public int read() throws IOException {
       if (df.position() >= df.size()) {
         return -1;
@@ -203,6 +204,7 @@ public final class DataFileUtils {
       this.df = df;
     }
 
+    @Override
     public void write(int b) throws IOException {
       df.put((byte) b);
     }
@@ -228,6 +230,7 @@ public final class DataFileUtils {
       this.df = df;
     }
 
+    @Override
     public void write(int b) throws IOException {
       // Only write if either the position is at the end or the current value
       // is different.
@@ -294,7 +297,7 @@ public final class DataFileUtils {
    */
   static class EmptyDataFile implements AddressableDataFile {
     private RuntimeException emptyDataFileException() {
-      return new RuntimeException("EmptyDataFile");
+      return new DataPositionOutOfBoundsException("EmptyDataFile");
     }
     @Override
     public long size() {
@@ -303,7 +306,7 @@ public final class DataFileUtils {
     @Override
     public void position(long position) {
       if (position != 0) {
-        throw new RuntimeException("Position out of bounds");
+        throw new DataPositionOutOfBoundsException("Position out of bounds");
       }
     }
     @Override
