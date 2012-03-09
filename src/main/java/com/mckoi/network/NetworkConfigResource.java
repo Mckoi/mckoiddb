@@ -28,6 +28,7 @@ package com.mckoi.network;
 import com.mckoi.util.StringUtil;
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
@@ -268,6 +269,18 @@ public abstract class NetworkConfigResource {
    * resource.
    */
   public static NetworkConfigResource getNetConfig(URL url) {
+    // If it's a file URL,
+    if (url.getProtocol().equals("file")) {
+      File f;
+      try {
+        f = new File(url.toURI());
+      }
+      catch(URISyntaxException e) {
+        f = new File(url.getPath());
+      }
+      return getNetConfig(f);
+    }
+    // Otherwise use the URL version,
     return new URLNetworkConfigResource(url);
   }
 
