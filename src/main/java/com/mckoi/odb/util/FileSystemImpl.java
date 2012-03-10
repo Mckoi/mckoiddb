@@ -202,7 +202,7 @@ public class FileSystemImpl implements FileSystem {
    */
   private void checkValidDBFile(String db_file) {
     if (!db_file.startsWith("/")) {
-      throw new FileSystemException("File name must starts with ''/''");
+      throw new FileSystemException("File name must start with ''/''");
     }
     // File names may not contain double /
     if (db_file.contains("//")) {
@@ -219,7 +219,7 @@ public class FileSystemImpl implements FileSystem {
    */
   private void checkValidDBPath(String db_path) {
     if (!db_path.startsWith("/")) {
-      throw new FileSystemException("Path name must starts with ''/''");
+      throw new FileSystemException("Path name must start with ''/''");
     }
     if (!db_path.endsWith("/")) {
       throw new FileSystemException("Path name must end with ''/''");

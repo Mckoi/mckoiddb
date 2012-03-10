@@ -162,7 +162,8 @@ public interface FileSystem {
   FileInfo getFileInfo(String item_name);
 
   /**
-   * Returns a DataFile of the contents of the given file name.
+   * Returns a DataFile of the contents of the given file name. Returns null
+   * if the file doesn't exist.
    */
   DataFile getDataFile(String file_name);
 
