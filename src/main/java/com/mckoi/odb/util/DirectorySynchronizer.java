@@ -168,7 +168,7 @@ public class DirectorySynchronizer {
   /**
    * Calculates the SHA-256 hash of the data in the given input stream.
    */
-  private static byte[] calcHash(InputStream ins) throws IOException {
+  public static byte[] calcHash(InputStream ins) throws IOException {
     // Get SHA digest,
     MessageDigest digest;
     try {
