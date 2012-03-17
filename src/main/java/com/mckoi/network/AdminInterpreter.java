@@ -1311,7 +1311,7 @@ public class AdminInterpreter {
 
     DataAddress[] data_addresses =
          network_profile.getHistoricalPathRoots(
-                                           address, path_name, timestamp, 20);
+                                           address, path_info, timestamp, 20);
 
     if (data_addresses.length == 0) {
       out.println("No historical roots found.");
@@ -1342,7 +1342,7 @@ public class AdminInterpreter {
 
     out.println();
     if (approval.equals("YES")) {
-      network_profile.setPathRoot(address, path_name, data_addresses[0]);
+      network_profile.setPathRoot(address, path_info, data_addresses[0]);
 
 //      network_profile.setCurrentPathRoot(address, path_name, data_addresses[0]);
       out.println("Done.");

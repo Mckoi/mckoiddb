@@ -1270,7 +1270,8 @@ public class NetworkProfile {
    * given time or not. The returned DataAddress objects will be snapshots
    * at roughly the time given.
    */
-  public DataAddress[] getHistoricalPathRoots(ServiceAddress root, String path_name,
+  public DataAddress[] getHistoricalPathRoots(ServiceAddress root,
+                  PathInfo path_info,
                   long timestamp, int max_count) throws NetworkAdminException {
 
     inspectNetwork();
@@ -1285,7 +1286,8 @@ public class NetworkProfile {
     // Perform the command,
     MessageStream msg_out = new MessageStream(7);
     msg_out.addMessage("getPathHistorical");
-    msg_out.addString(path_name);
+    msg_out.addString(path_info.getPathName());
+    msg_out.addInteger(path_info.getVersionNumber());
     msg_out.addLong(timestamp);
     msg_out.addLong(timestamp);
     msg_out.closeMessage();
@@ -1304,7 +1306,7 @@ public class NetworkProfile {
    * the root server. Great care should be taken when using this function
    * because it bypasses all commit checks.
    */
-  public void setPathRoot(ServiceAddress root, String path_name,
+  public void setPathRoot(ServiceAddress root, PathInfo path_info,
                           DataAddress address) throws NetworkAdminException {
 
     inspectNetwork();
@@ -1319,7 +1321,8 @@ public class NetworkProfile {
     // Perform the command,
     MessageStream msg_out = new MessageStream(7);
     msg_out.addMessage("publishPath");
-    msg_out.addString(path_name);
+    msg_out.addString(path_info.getPathName());
+    msg_out.addInteger(path_info.getVersionNumber());
     msg_out.addDataAddress(address);
     msg_out.closeMessage();
 
