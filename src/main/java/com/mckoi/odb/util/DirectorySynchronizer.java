@@ -127,6 +127,24 @@ public class DirectorySynchronizer {
   }
 
   /**
+   * Synchronizes the directory in the Mckoi file system with the local file
+   * system.
+   * <p>
+   * Returns the number of updates performed. If 0 is returned then no
+   * changes were made to the destination repository.
+   */
+  public static DirectorySynchronizer getMckoiToJavaSynchronizer(
+                       PrintStream out,
+                       FileSystem mckoi_file_sys, String mckoi_path,
+                       File local_path) {
+
+    return new DirectorySynchronizer(out,
+                         new MckoiRepository(mckoi_file_sys, mckoi_path),
+                         new JavaRepository(local_path) );
+
+  }
+
+  /**
    * Synchronizes the Mckoi file system with the given Mckoi file system.
    * <p>
    * Returns the number of updates performed. If 0 is returned then no
