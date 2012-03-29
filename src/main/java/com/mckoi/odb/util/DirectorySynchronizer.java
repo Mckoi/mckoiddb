@@ -52,7 +52,7 @@ public class DirectorySynchronizer {
   /**
    * The stream to output information to.
    */
-  private final PrintStream out;
+  private final PrintWriter out;
   
   /**
    * The source repository.
@@ -65,7 +65,7 @@ public class DirectorySynchronizer {
   private final SynchronizerRepository dest_rep;
 
 
-  public DirectorySynchronizer(PrintStream out,
+  public DirectorySynchronizer(PrintWriter out,
                                SynchronizerRepository source,
                                SynchronizerRepository dest) {
     this.out = out;
@@ -117,7 +117,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getJavaToMckoiSynchronizer(
-                       PrintStream out, File local_path,
+                       PrintWriter out, File local_path,
                        FileSystem mckoi_file_sys, String mckoi_path) {
 
     return new DirectorySynchronizer(out,
@@ -134,7 +134,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getMckoiToJavaSynchronizer(
-                       PrintStream out,
+                       PrintWriter out,
                        FileSystem mckoi_file_sys, String mckoi_path,
                        File local_path) {
 
@@ -151,7 +151,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getMckoiToMckoiSynchronizer(
-                       PrintStream out,
+                       PrintWriter out,
                        FileSystem mckoi_src_filesys, String mckoi_src_path,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path) {
 
@@ -168,7 +168,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getZipToMckoiSynchronizer(
-                       PrintStream out, File zip_file,
+                       PrintWriter out, File zip_file,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path)
                                                            throws IOException {
 
@@ -245,7 +245,7 @@ public class DirectorySynchronizer {
    * <p>
    * Returns the number of files updated in the new version.
    * <p>
-   * Writes what happened to the PrintStream if 'out' is not null.
+   * Writes what happened to the PrintWriter if 'out' is not null.
    */
   private long recursiveSynchronizeDir(final String sync_dir)
                                                            throws IOException {
