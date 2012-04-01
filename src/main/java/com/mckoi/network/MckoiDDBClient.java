@@ -45,7 +45,7 @@ import java.io.PrintWriter;
  * @author Tobias Downer
  */
 
-public abstract class MckoiDDBClient {
+public class MckoiDDBClient {
 
   /**
    * The network connector object.
@@ -95,8 +95,7 @@ public abstract class MckoiDDBClient {
 //  }
 
   /**
-   * Node cache constructor. 'this_machine' can be null if the client isn't
-   * on a MckoiDDB network.
+   * Node cache constructor.
    */
   MckoiDDBClient(ServiceAddress[] manager_servers,
                  String network_password,

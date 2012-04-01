@@ -110,7 +110,7 @@ public abstract class NetworkConfigResource {
   /**
    * Constructor.
    */
-  public NetworkConfigResource() {
+  protected NetworkConfigResource() {
 
     // Security check,
     SecurityManager security = System.getSecurityManager();
