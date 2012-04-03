@@ -303,11 +303,13 @@ class OrderedReferenceList implements ODBList {
   /**
    * Returns the size of the list (the total number of references stored).
    */
+  @Override
   public long size() {
     updateInternalState();
     return end_pos - start_pos;
   }
 
+  @Override
   public boolean isEmpty() {
     updateInternalState();
     return end_pos == start_pos;
@@ -317,10 +319,12 @@ class OrderedReferenceList implements ODBList {
     return list_class;
   }
 
+  @Override
   public ODBClass getElementClass() {
     return order_spec.getODBClass();
   }
 
+  @Override
   public void add(Reference ref) throws ConstraintViolationException {
 
     updateInternalState();
@@ -335,10 +339,12 @@ class OrderedReferenceList implements ODBList {
     insert(ref);
   }
 
+  @Override
   public void add(ODBObject value) throws ConstraintViolationException {
     add(value.getReference());
   }
 
+  @Override
   public Reference first() {
     updateInternalState();
     if (start_pos >= end_pos) {
@@ -347,6 +353,7 @@ class OrderedReferenceList implements ODBList {
     return getReferenceAt(start_pos);
   }
 
+  @Override
   public Reference last() {
     updateInternalState();
     if (start_pos >= end_pos) {
@@ -355,6 +362,7 @@ class OrderedReferenceList implements ODBList {
     return getReferenceAt(end_pos - 1);
   }
 
+  @Override
   public ODBListIterator iterator() {
     updateInternalState();
 
@@ -362,46 +370,55 @@ class OrderedReferenceList implements ODBList {
 
       long pos = start_pos - 1;
 
+      @Override
       public boolean hasNext() {
         return pos < (end_pos - 1);
       }
 
+      @Override
       public boolean hasPrevious() {
         return pos > start_pos;
       }
 
+      @Override
       public ODBObject next() {
         if (!hasNext()) {
           throw new NoSuchElementException();
         }
         ++pos;
-        return getObject(pos);
+        return getObject(pos - start_pos);
       }
 
+      @Override
       public int nextIndex() {
         return (int) (pos - start_pos) + 1;
       }
 
+      @Override
       public ODBObject previous() {
         if (!hasPrevious()) {
           throw new NoSuchElementException();
         }
         --pos;
-        return getObject(pos);
+        return getObject(pos - start_pos);
       }
 
+      @Override
       public int previousIndex() {
         return (int) (pos - start_pos);
       }
 
+      @Override
       public void add(ODBObject e) {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }
 
+      @Override
       public void set(ODBObject e) {
         throw new UnsupportedOperationException();
       }
@@ -412,6 +429,7 @@ class OrderedReferenceList implements ODBList {
 
 
 
+  @Override
   public boolean contains(Reference ref) {
     updateInternalState();
 
@@ -426,6 +444,7 @@ class OrderedReferenceList implements ODBList {
     return true;
   }
 
+  @Override
   public Reference get(long index) {
     updateInternalState();
     long sz = end_pos - start_pos;
@@ -435,10 +454,12 @@ class OrderedReferenceList implements ODBList {
     return getReferenceAt(start_pos + index);
   }
 
+  @Override
   public ODBObject getObject(long index) {
     return transaction.getObject(getElementClass(), get(index));
   }
 
+  @Override
   public long indexOf(Reference ref) {
     updateInternalState();
 
@@ -446,6 +467,7 @@ class OrderedReferenceList implements ODBList {
     return (pos - start_pos);
   }
 
+  @Override
   public long lastIndexOf(Reference ref) {
     updateInternalState();
 
@@ -453,6 +475,7 @@ class OrderedReferenceList implements ODBList {
     return (pos - start_pos);
   }
 
+  @Override
   public boolean remove(Reference ref) {
     updateInternalState();
     if (!isWithinBounds(ref)) {
@@ -461,6 +484,7 @@ class OrderedReferenceList implements ODBList {
     return remove(ref, start_pos, end_pos);
   }
 
+  @Override
   public boolean removeAll(Reference ref) {
     updateInternalState();
     if (!isWithinBounds(ref)) {
@@ -469,6 +493,7 @@ class OrderedReferenceList implements ODBList {
     return removeAll(ref, start_pos, end_pos);
   }
 
+  @Override
   public ODBList sub(Reference from_ref, Reference to_ref) {
     updateInternalState();
 
@@ -480,6 +505,7 @@ class OrderedReferenceList implements ODBList {
 
   }
 
+  @Override
   public ODBList head(Reference to_ref) {
     updateInternalState();
 
@@ -489,6 +515,7 @@ class OrderedReferenceList implements ODBList {
 
   }
 
+  @Override
   public ODBList tail(Reference from_ref) {
     updateInternalState();
 
@@ -501,6 +528,7 @@ class OrderedReferenceList implements ODBList {
 
 
 
+  @Override
   public boolean contains(String key_value) {
     updateInternalState();
 
@@ -515,6 +543,7 @@ class OrderedReferenceList implements ODBList {
     return true;
   }
 
+  @Override
   public Reference get(String key_value) {
     updateInternalState();
     // Error if outside the bounds,
@@ -529,6 +558,7 @@ class OrderedReferenceList implements ODBList {
     return getReferenceAt(pos);
   }
 
+  @Override
   public ODBObject getObject(String key_value) {
     Reference ref = get(key_value);
     if (ref == null) {
@@ -537,6 +567,7 @@ class OrderedReferenceList implements ODBList {
     return transaction.getObject(getElementClass(), ref);
   }
 
+  @Override
   public long indexOf(String key_value) {
     updateInternalState();
 
@@ -544,6 +575,7 @@ class OrderedReferenceList implements ODBList {
     return pos - start_pos;
   }
 
+  @Override
   public long lastIndexOf(String key_value) {
     updateInternalState();
 
@@ -551,6 +583,7 @@ class OrderedReferenceList implements ODBList {
     return pos - start_pos;
   }
 
+  @Override
   public boolean remove(String key_value) {
     updateInternalState();
     if (!isWithinBounds(key_value)) {
@@ -559,6 +592,7 @@ class OrderedReferenceList implements ODBList {
     return remove(key_value, start_pos, end_pos);
   }
 
+  @Override
   public boolean removeAll(String key_value) {
     updateInternalState();
     if (!isWithinBounds(key_value)) {
@@ -567,6 +601,7 @@ class OrderedReferenceList implements ODBList {
     return removeAll(key_value, start_pos, end_pos);
   }
 
+  @Override
   public ODBList sub(String from_key, String to_key) {
     updateInternalState();
 
@@ -576,6 +611,7 @@ class OrderedReferenceList implements ODBList {
                      list_class, data, order_spec, root_set, from_ref, to_ref);
   }
 
+  @Override
   public ODBList head(String to_key) {
     updateInternalState();
 
@@ -584,6 +620,7 @@ class OrderedReferenceList implements ODBList {
                   list_class, data, order_spec, root_set, lower_bound, to_ref);
   }
 
+  @Override
   public ODBList tail(String from_key) {
     updateInternalState();
 
@@ -824,11 +861,11 @@ class OrderedReferenceList implements ODBList {
 
     String desc = order_spec.getKeyCollationDescription();
     int field_num = order_spec.getKeyFieldIndex();
-    ODBClass list_class = order_spec.getODBClass();
+    ODBClass os_list_class = order_spec.getODBClass();
 
     if (desc.equals("lexi")) {
       // Lexicographical order,
-      return new LexiFieldComparator(list_class, field_num, key_value);
+      return new LexiFieldComparator(os_list_class, field_num, key_value);
     }
     else {
       throw new RuntimeException("Pending collators");
@@ -1080,6 +1117,7 @@ class OrderedReferenceList implements ODBList {
     ExactPositionComparator(Comparator<Reference> backed) {
       this.backed = backed;
     }
+    @Override
     public int compare(Reference r1, Reference r2) {
       int c = backed.compare(r1, r2);
       // If the backed comparator found the values to be equal, we use the
@@ -1096,6 +1134,7 @@ class OrderedReferenceList implements ODBList {
    */
   private static Comparator<Reference> reference_value_comparator =
                                                  new Comparator<Reference>() {
+    @Override
     public int compare(Reference r1, Reference r2) {
       return r1.compareTo(r2);
     }
@@ -1131,6 +1170,7 @@ class OrderedReferenceList implements ODBList {
       this.external_key = external_key;
     }
 
+    @Override
     public int compare(Reference o1, Reference o2) {
       String str1, str2;
 
