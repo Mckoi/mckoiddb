@@ -33,6 +33,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.CRC32;
@@ -111,8 +112,8 @@ class NetworkTreeSystem implements TreeSystem {
   /**
    * For debugging.
    */
-  public volatile long network_comm_count = 0;
-  public volatile long network_fetch_comm_count = 0;
+  public final AtomicLong network_comm_count = new AtomicLong(0);
+  public final AtomicLong network_fetch_comm_count = new AtomicLong(0);
 
   // ---------- Logging ----------
 
@@ -1134,8 +1135,8 @@ interface_loop:
                        connector.connectBlockServer(server.getAddress());
           ProcessResult message_in =
                        block_server_proc.process(block_server_msg);
-          ++network_comm_count;
-          ++network_fetch_comm_count;
+          network_comm_count.incrementAndGet();
+          network_fetch_comm_count.incrementAndGet();
 //          System.out.println(network_fetch_comm_count);
           boolean is_error = false;
           boolean severe_error = false;
@@ -1661,7 +1662,7 @@ interface_loop:
         ServiceAddress address = block_servers.get(o).getAddress();
         block_server_procs[o] = connector.connectBlockServer(address);
         ProcessResult message_in = block_server_procs[o].process(message_out);
-        ++network_comm_count;
+        network_comm_count.incrementAndGet();
 
         for (Message m : message_in) {
           if (m.isError()) {
@@ -1692,7 +1693,7 @@ interface_loop:
               ProcessResult msg_in =
                       connector.connectBlockServer(blocks_addr).process(
                                                                rollback_msg);
-              ++network_comm_count;
+              network_comm_count.incrementAndGet();
               for (Message rbm : msg_in) {
                 // If rollback generated an error we throw the error now
                 // because this likely is a serious network error.

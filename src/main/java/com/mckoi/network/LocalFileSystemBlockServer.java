@@ -28,6 +28,7 @@ package com.mckoi.network;
 import com.mckoi.data.NodeReference;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -124,7 +125,7 @@ public class LocalFileSystemBlockServer {
   /**
    * The number of blocks stored in this instance.
    */
-  private volatile long block_count = 0;
+  private final AtomicLong block_count = new AtomicLong(0);
 
   /**
    * The max known block id for the manager key.
@@ -216,7 +217,7 @@ public class LocalFileSystemBlockServer {
     }
 
     // Discover the block count,
-    block_count = blocks.length;
+    block_count.set(blocks.length);
 //    // The latest block on this server,
 //    this.last_block_id = in_last_block_id;
 
@@ -242,7 +243,7 @@ public class LocalFileSystemBlockServer {
       compression_add_list.clear();
     }
 
-    block_count = 0;
+    block_count.set(0);
 //    last_block_id = null;
   }
 
@@ -537,7 +538,7 @@ public class LocalFileSystemBlockServer {
    * summary reports only (may not be completely accurate).
    */
   long getBlockCount() {
-    return block_count;
+    return block_count.get();
   }
   
 
@@ -649,7 +650,7 @@ public class LocalFileSystemBlockServer {
 //          last_block_id = block_id;
 //        }
 //      }
-      ++block_count;
+      block_count.incrementAndGet();
     }
 
   }
@@ -1340,7 +1341,7 @@ public class LocalFileSystemBlockServer {
         b = fetchBlockContainer(block_id);
         boolean created = b.open();
         if (created) {
-          ++block_count;
+          block_count.incrementAndGet();
 //          last_block_id = block_id;
         }
         touched.put(block_id, b);
