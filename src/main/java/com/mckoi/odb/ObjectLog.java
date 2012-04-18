@@ -279,6 +279,8 @@ class ObjectLog {
       dout.writeByte(0x004);
       dout.writeLong(key_val.getHighLong());
       dout.writeLong(key_val.getLowLong());
+      dout.writeLong(0);
+      dout.writeLong(0);
 
       JavaByteArray evt_elem = new JavaByteArray(bout.toByteArray());
 
@@ -1232,7 +1234,9 @@ class ObjectLog {
 
       }
       catch (IOException e) {
-        throw new RuntimeException(e);
+        String o1_str = o1.toString();
+        String o2_str = o2.toString();
+        throw new RuntimeException(o1_str + " to " + o2_str, e);
       }
 
     }
@@ -1275,6 +1279,8 @@ class ObjectLog {
       OBJECT_CHANGE_S = new JavaByteArray(bout1.toByteArray());
 
       dout2.writeByte((byte) 0x004);
+      dout2.writeLong(0);
+      dout2.writeLong(0);
       dout2.writeLong(0);
       dout2.writeLong(0);
       RESOURCE_ALLOC_S = new JavaByteArray(bout2.toByteArray());

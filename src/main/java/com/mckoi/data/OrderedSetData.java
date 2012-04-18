@@ -30,12 +30,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.AbstractSet;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-import java.util.SortedSet;
+import java.util.*;
 
 /**
  * An ordered set of variable length data strings mapped over a single
@@ -98,6 +93,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
   static {
     LEXI_COLLATOR = new Comparator<ByteArray>() {
+      @Override
       public int compare(ByteArray ob1, ByteArray ob2) {
         return ob1.compareTo(ob2);
       }
@@ -824,6 +820,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * <p>
    * Performance is O(n)
    */
+  @Override
   public int size() {
     updateInternalState();
     long p = this.start_pos;
@@ -840,6 +837,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   /**
    * Returns true if the set is empty. This is a low complexity query.
    */
+  @Override
   public boolean isEmpty() {
     updateInternalState();
     // If start_pos == end_pos then the list is empty
@@ -853,6 +851,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * Returns an Iterator over all the strings stored in this set in collation
    * order.
    */
+  @Override
   public Iterator<ByteArray> iterator() {
     // Note - important we update internal state here because start_pos and
     //   end_pos used by the inner class.
@@ -878,6 +877,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param str the value to search for.
    * @return true if the set contains the string.
    */
+  @Override
   public boolean contains(Object str) {
     if (str == null) throw new NullPointerException();
     updateInternalState();
@@ -891,6 +891,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * contain the string and the string was added, false if the set already
    * contains the value.
    */
+  @Override
   public boolean add(ByteArray value) {
 
     if (value == null) throw new NullPointerException();
@@ -1041,6 +1042,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param value the String to remove.
    * @return true if the value was removed.
    */
+  @Override
   public boolean remove(Object value) {
 
 //    System.out.println("remove: " + value);
@@ -1061,6 +1063,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   /**
    * Clears the set of all string items.
    */
+  @Override
   public void clear() {
 
 //    System.out.println("clear");
@@ -1120,6 +1123,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    *
    * @return the comparator for this set.
    */
+  @Override
   public Comparator<ByteArray> comparator() {
     return string_collator;
   }
@@ -1134,6 +1138,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param to_element the highest string in the subset
    * @return the sorted subset of string items.
    */
+  @Override
   public OrderedSetData subSet(ByteArray from_element,
                                      ByteArray to_element) {
     // check the bounds not out of range of the parent bounds
@@ -1151,6 +1156,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param to_element the highest string in the subset
    * @return the sorted subset of string items.
    */
+  @Override
   public OrderedSetData headSet(ByteArray to_element) {
     to_element = bounded(to_element);
     return new OrderedSetData(root_set, lower_bound, to_element);
@@ -1165,6 +1171,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param to_element the highest string in the subset
    * @return the sorted subset of string items.
    */
+  @Override
   public OrderedSetData tailSet(ByteArray from_element) {
     from_element = bounded(from_element);
     return new OrderedSetData(root_set, from_element, upper_bound);
@@ -1175,6 +1182,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    *
    * @return the first (lowest) element currently in this set
    */
+  @Override
   public ByteArray first() {
     updateInternalState();
 
@@ -1204,6 +1212,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    *
    * @return the last (highest) element currently in this set
    */
+  @Override
   public ByteArray last() {
     updateInternalState();
 
@@ -1273,6 +1282,23 @@ public class OrderedSetData extends AbstractSet<ByteArray>
       this.start_pos = start_pos;
       this.end_pos = -1;
       this.materialized_version = null;
+    }
+
+    /**
+     * Returns a string representation of this byte array as a list of byte
+     * values.
+     */
+    @Override
+    public String toString() {
+      StringBuilder b = new StringBuilder();
+      b.append("[");
+      int len = length();
+      for (int i = 0; i < len; ++i) {
+        b.append(Byte.toString(getByteAt(i)));
+        b.append(" ");
+      }
+      b.append("]");
+      return b.toString();
     }
 
     private byte[] materializedArray() {
