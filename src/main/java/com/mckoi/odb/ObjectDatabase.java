@@ -34,6 +34,8 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * An implementation of a ConsensusProcessor for the Object Database data
@@ -53,6 +55,11 @@ import java.util.Iterator;
  */
 
 public class ObjectDatabase implements ConsensusProcessor {
+
+  /**
+   * The logger.
+   */
+  private static final Logger LOG = Logger.getLogger("com.mckoi.network.Log");
 
   private final Object commit_lock = new Object();
 
@@ -138,11 +145,11 @@ public class ObjectDatabase implements ConsensusProcessor {
                               new ODBTransactionImpl(null, proposal, t, false);
 
       // The transaction log,
-      ObjectLog object_log = proposed_transaction.getProposedObjectLog();
+      ObjectLog proposed_object_log = proposed_transaction.getProposedObjectLog();
 //      object_log.printDebug();
 
       // The base root proposal of this transaction log,
-      DataAddress base_root = object_log.getBaseRoot();
+      DataAddress base_root = proposed_object_log.getBaseRoot();
 
       // If 'base_root' is null then it means we are commiting an introduced
       // transaction that is not an iteration of previous snapshots.
@@ -194,7 +201,8 @@ public class ObjectDatabase implements ConsensusProcessor {
 
         // Merge dictionary entries,
 
-        Iterator<DictionaryEvent> di = object_log.getDictionaryAddIterator();
+        Iterator<DictionaryEvent> di =
+                                proposed_object_log.getDictionaryAddIterator();
         while (di.hasNext()) {
           DictionaryEvent evt = di.next();
           proposed_transaction.copyDictionaryAdditionTo(
@@ -227,9 +235,18 @@ public class ObjectDatabase implements ConsensusProcessor {
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
 
+          // The maximum resource value of this transaction root,
+          Key root_max_key = root_transaction.getResourceLookupMaxKey();
+          // Make sure the new transaction inherits the largest key from the
+          // intermediate roots,
+          if (root_max_key.compareTo(max_key) > 0) {
+            max_key = root_max_key;
+          }
+
           // Get an iterator for resources allocated in the proposed
           // transaction,
-          Iterator<KeyAllocation> pi = object_log.getKeyAllocIterator();
+          Iterator<KeyAllocation> pi =
+                                     proposed_object_log.getKeyAllocIterator();
 
           // For each resource allocated in the proposal,
           while (pi.hasNext()) {
@@ -248,6 +265,8 @@ public class ObjectDatabase implements ConsensusProcessor {
                 resource_map.put(src_key, SAME_KEY);
               }
             }
+            // Make sure the max_key is as large as the greatest key in the
+            // proposed set
             if (src_key.compareTo(max_key) > 0) {
               max_key = src_key;
             }
@@ -264,12 +283,13 @@ public class ObjectDatabase implements ConsensusProcessor {
 
         // Make sure the lookup table is updated,
         if (max_key.compareTo(ZERO_KEY) > 0) {
-          current_transaction.updateResourceLookupManager(max_key);
+          current_transaction.updateResourceLookupMaxKey(max_key);
 
           // Now we move all the resources created in the proposal over to the
           // current transaction.
 
-          Iterator<KeyAllocation> pi = object_log.getKeyAllocIterator();
+          Iterator<KeyAllocation> pi =
+                                     proposed_object_log.getKeyAllocIterator();
 
           // For each resource allocated in the proposal,
           while (pi.hasNext()) {
@@ -280,15 +300,17 @@ public class ObjectDatabase implements ConsensusProcessor {
 
             // If the key needs to be mapped to a new key,
             if (resource_map.get(src_key).equals(NEW_KEY)) {
-              dst_key =
-                 proposed_transaction.copyResourceAsNewKeyTo(current_transaction,
-                        alloc.getRef(), src_key);
+              dst_key = proposed_transaction.copyResourceAsNewKeyTo(
+                                 current_transaction, alloc.getRef(), src_key);
+              if (LOG.isLoggable(Level.FINE)) {
+                LOG.log(Level.FINE, "Resource key remapped, {0} to {1}",
+                        new Object[] { src_key, dst_key });
+              }
             }
             // Otherwise we copy under the same key,
             else {
-              dst_key =
-                 proposed_transaction.copyResourceTo(current_transaction,
-                        alloc.getRef(), src_key);
+              dst_key = proposed_transaction.copyResourceTo(
+                                 current_transaction, alloc.getRef(), src_key);
             }
 
           }
@@ -311,7 +333,8 @@ public class ObjectDatabase implements ConsensusProcessor {
           ObjectLog root_log = root_transaction.getProposedObjectLog();
 
           // Check for object change clashes,
-          Iterator<ObjectChangeEvent> obi = object_log.getObjectChangeIterator();
+          Iterator<ObjectChangeEvent> obi =
+                                 proposed_object_log.getObjectChangeIterator();
           while (obi.hasNext()) {
             ObjectChangeEvent evt = obi.next();
 
@@ -326,7 +349,8 @@ public class ObjectDatabase implements ConsensusProcessor {
           }
 
           // Check for data change clashes,
-          Iterator<DataChangeEvent> dbi = object_log.getDataChangeIterator();
+          Iterator<DataChangeEvent> dbi =
+                                 proposed_object_log.getDataChangeIterator();
           while (dbi.hasNext()) {
             DataChangeEvent evt = dbi.next();
 
@@ -347,7 +371,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         // Now every object construction and change in the proposal must be
         // copied to the current transaction.
 
-        Iterator<ObjectChangeEvent> obi = object_log.getObjectChangeIterator();
+        Iterator<ObjectChangeEvent> obi =
+                               proposed_object_log.getObjectChangeIterator();
         while (obi.hasNext()) {
           ObjectChangeEvent evt = obi.next();
 
@@ -358,7 +383,8 @@ public class ObjectDatabase implements ConsensusProcessor {
 
         // Copy every data change in the proposal to the current transaction.
 
-        Iterator<DataChangeEvent> dbi = object_log.getDataChangeIterator();
+        Iterator<DataChangeEvent> dbi =
+                               proposed_object_log.getDataChangeIterator();
         while (dbi.hasNext()) {
           DataChangeEvent evt = dbi.next();
 
@@ -388,7 +414,8 @@ public class ObjectDatabase implements ConsensusProcessor {
           // The transaction log,
           ObjectLog root_log = root_transaction.getProposedObjectLog();
 
-          Iterator<ListChangeEvent> lci = object_log.getListChangeIterator();
+          Iterator<ListChangeEvent> lci =
+                                   proposed_object_log.getListChangeIterator();
           while (lci.hasNext()) {
             ListChangeEvent evt = lci.next();
 
@@ -400,7 +427,8 @@ public class ObjectDatabase implements ConsensusProcessor {
         }
 
         // The lists that were not changed in the history
-        Iterator<ListChangeEvent> lci = object_log.getListChangeIterator();
+        Iterator<ListChangeEvent> lci =
+                                 proposed_object_log.getListChangeIterator();
         while (lci.hasNext()) {
           ListChangeEvent evt = lci.next();
           // If the list is not in the list builds, then we can simply copy
@@ -410,7 +438,7 @@ public class ObjectDatabase implements ConsensusProcessor {
             // transaction,
             proposed_transaction.copyListTo(
                                   current_transaction, evt.getListReference(),
-                                  object_log);
+                                  proposed_object_log);
           }
         }
 
@@ -424,7 +452,7 @@ public class ObjectDatabase implements ConsensusProcessor {
 //          counter = 0;
 
           Iterator<ListItemChangeEvent> lii =
-                                        object_log.getListItemAddIterator();
+                                  proposed_object_log.getListItemAddIterator();
           while (lii.hasNext()) {
             ListItemChangeEvent evt = lii.next();
 
@@ -452,7 +480,7 @@ public class ObjectDatabase implements ConsensusProcessor {
 //          counter = 0;
 
           Iterator<ListItemChangeEvent> lii =
-                                        object_log.getListItemRemoveIterator();
+                               proposed_object_log.getListItemRemoveIterator();
           while (lii.hasNext()) {
             ListItemChangeEvent evt = lii.next();
 
@@ -460,9 +488,9 @@ public class ObjectDatabase implements ConsensusProcessor {
               try {
                 // We add the item to the list,
                 current_transaction.replayListItemRemove(
-                               proposed_transaction,
-                               evt.getListReference(), evt.getObjectReference(),
-                               evt.getListClassReference());
+                             proposed_transaction,
+                             evt.getListReference(), evt.getObjectReference(),
+                             evt.getListClassReference());
               }
               catch (ConstraintViolationException e) {
                 throw new CommitFaultException(e.getMessage());
@@ -475,145 +503,6 @@ public class ObjectDatabase implements ConsensusProcessor {
         }
 
         // Done.
-
-
-//        // First, any resources allocated must be checked to ensure they don't
-//        // clash with resource keys allocated in concurrent roots. If there are
-//        // clashes, the key needs to be reallocated against a bucket of keys
-//        // that are known to be fresh. Any constructed objects with clashed
-//        // keys must be modified with the new allocation.
-//
-//        // This method creates an object that can be queried to determine the
-//        // destination of any created resource.
-//
-//        ResourceMap resource_map = createResourceMap(connection, roots,
-//                                              object_log, current_transaction);
-//
-//        // Copy all the objects that were constructed or changed from the
-//        // proposal into the new transaction, and any resource associated with
-//        // the object using the resource map to remap any resource keys.
-//
-//        copyModifiedObjectsTo(resource_map, object_log,
-//                              proposed_transaction, current_transaction);
-//
-//        // Now 'current_transaction' will contain a copy of all the new and
-//        // modified objects and resources from the proposal. Now we must
-//        // merge the lists/indexes.
-//        // This will commit fault if a list operation is not possible (for
-//        // example, to delete a reference not in the list).
-//
-//        mergeModifiedListsTo(resource_map, object_log,
-//                             proposed_transaction, current_transaction);
-
-//        // The list operations
-//        // -------------------
-//
-//        // This merge process is performed as follows;
-//        // 1) Fetch the latest snapshot published (we will call LS)
-//        // 2) Scan proposed log and create a list of reference lists that were
-//        //    changed in the proposal (CRL), and a list of reference lists that
-//        //    were removed (RRL).
-//        // 3) Scan the historical logs, if a reference list was removed that is
-//        //    in RRL then commit fault. If an item in CRL was changed in an
-//        //    historical snapshot then add to a new list called MCRL.
-//        // 4) Scan CRL, if the item is not in MCRL then do a full copy.
-//        //    Otherwise, perform a merge operation.
-//
-//        // Reference lists that were changed,
-//        ArrayList<Reference> crl = new ArrayList(30);
-//        // Reference lists that were removed,
-//        ArrayList<Reference> rrl = new ArrayList(7);
-//
-//        // Reference lists that need to be merged (changed both in the proposal
-//        // and in a commit event since the base root),
-//        ArrayList<Reference> mcrl = new ArrayList(30);
-//
-//        object_log.queryChangedLists(crl);
-//        object_log.queryFreedLists(rrl);
-//
-//        int sz = roots.length;
-//        int n = 0;
-//        ObjectLog[] event_logs = new ObjectLog[sz];
-//
-//        // For each root since the base root of the proposal,
-//        for (DataAddress root : roots) {
-//          KeyObjectTransaction event_t = connection.createTransaction(root);
-//          ODBTransaction event_transaction =
-//                                  new ODBTransaction(null, proposal, event_t);
-//
-//          // The event's transaction log,
-//          ObjectLog event_object_log =
-//                                     event_transaction.getProposedObjectLog();
-//
-//          // Put into the event log array,
-//          event_logs[n] = event_object_log;
-//
-//          // Inconsistent list free operation?
-//          if (event_object_log.didListFreeOn(rrl)) {
-//            // NOTE: Might be better just not to bother checking for this
-//            //   fault, because the 'free' operation would happen during a
-//            //   Garbage Collection like operation on the object data so a
-//            //   double free should never happen unless multiple clients are
-//            //   doing GC operations.
-//            //   Silent double frees and leaving the snapshot consistent (the
-//            //   list being gone regardless).
-//            throw new CommitFaultException("Double list free");
-//          }
-//
-//          // Find out the lists that changed in 'event_object_log' that are
-//          // also in crl and put them in mcrl.
-//          event_object_log.queryListChangeMerge(crl, mcrl);
-//
-//          ++n;
-//        }
-//
-//        // Create a new transaction representing the current snapshot,
-//        DataAddress current_root = connection.getCurrentSnapshot();
-//        KeyObjectTransaction current_t =
-//                                   connection.createTransaction(current_root);
-//        ODBTransaction current_transaction =
-//                            new ODBTransaction(null, current_root, current_t);
-//
-//        // Merge any dictionary additions
-//        dictionaryMergeOperation(object_log, proposal, current_transaction);
-//
-//        // Merge all the object addition and changes to the new
-//        // transaction.
-//        Iterator<ObjectChangeEvent> objects_changed =
-//                                          object_log.getObjectChangeIterator();
-//        while (objects_changed.hasNext()) {
-//          ObjectChangeEvent r = objects_changed.next();
-//          // For each log in previous events,
-//          for (ObjectLog event_log : event_logs) {
-//            if (event_log.hasObjectChange(r)) {
-//              // The object changed historically, so generate a commit fault,
-//              throw new CommitFaultException(MessageFormat.format(
-//                          "Object at reference {0} concurrently modified", r));
-//            }
-//          }
-//          // This modification was not concurrently modified, so copy it to the
-//          // current transaction,
-//          objectCopyOperation(r, proposal, current_transaction);
-//        }
-//
-//        // Perform the transactional list operations (and checks),
-//
-//        // For each list in crl
-//        for (Reference list_ref : crl) {
-//          // If the list is also in mcrl, then we have to merge it the slow way,
-//          if (referenceListContains(mcrl, list_ref)) {
-//            // Merge from 'proposal' to 'current_transaction'
-//            listMergeOperation(list_ref, object_log,
-//                               proposal, current_transaction);
-//          }
-//          // Otherwise, we can do a much faster copy,
-//          else {
-//            // Copy from 'proposal' to 'current_transaction'
-//            listCopyOperation(list_ref, object_log,
-//                              proposal, current_transaction);
-//          }
-//        }
-
 
 
         // Flush and publish the new proposal with the merged changes,
@@ -631,130 +520,46 @@ public class ObjectDatabase implements ConsensusProcessor {
 
 
 
-//  /**
-//   * Remaps any keys that are discovered to clash.
-//   */
-//  private void remapClashedKeys(ConsensusDDBConnection connection,
-//                   DataAddress[] roots, ObjectLog object_log,
-//                   ODBTransaction current_transaction) {
-//
-//    // For each root,
-//    for (DataAddress root : roots) {
-//      KeyObjectTransaction t = connection.createTransaction(root);
-//      ODBTransaction proposed_transaction = new ODBTransaction(null, root, t);
-//
-//      // The transaction log,
-//      ObjectLog root_log = proposed_transaction.getProposedObjectLog();
-//
-//      // Get an iterator for resources allocated in the proposed transaction,
-//      Iterator<KeyAllocation> pi = object_log.getKeyAllocIterator();
-//
-//      // For each resource allocated in the proposal,
-//      while (pi.hasNext()) {
-//        KeyAllocation alloc = pi.next();
-//        Key src_key = alloc.getKey();
-//        // Does the root log also allocate this?
-//        if (root_log.hasKeyAllocated(src_key)) {
-//          // If so, this is a clash condition, so allocate a new resource and
-//          // add it to the map,
-//          Key dst_key =
-//                   current_transaction.allocateKeyForReference(alloc.getRef());
-//
-//          // Copy the content of the key to the fresh key,
-//          current_transaction.remapReferenceTo(
-//                                      alloc.getRef(), alloc.getKey(), dst_key);
-//
-//        }
-//      }
-//
-//    }
-//
-//  }
-
-//  /**
-//   * Creates a ResourceMap object.
-//   */
-//  private ResourceMap createResourceMap(ConsensusDDBConnection connection,
-//                   DataAddress[] roots, ObjectLog object_log,
-//                   ODBTransaction current_transaction) {
-//
-//    ResourceMap map = new ResourceMap();
-//
-//    // For each root,
-//    for (DataAddress root : roots) {
-//      KeyObjectTransaction t = connection.createTransaction(root);
-//      ODBTransaction proposed_transaction = new ODBTransaction(null, root, t);
-//
-//      // The transaction log,
-//      ObjectLog root_log = proposed_transaction.getProposedObjectLog();
-//
-////      // Get an iterator for resources allocated in this log,
-////      Iterator<ODBTransaction.ResourceKey> ri =
-////                                         root_log.getResourceAllocIterator();
-//      // Get an iterator for resources allocated in the proposed transaction,
-//      Iterator<KeyAllocation> pi = object_log.getKeyAllocIterator();
-//
-//      // For each resource allocated in the proposal,
-//      while (pi.hasNext()) {
-//        KeyAllocation alloc = pi.next();
-//        // Does the root log also allocate this?
-//        if (root_log.hasKeyAllocated(alloc.getKey())) {
-//          // If so, this is a clash condition, so allocate a new resource and
-//          // add it to the map,
-//          Key mapped_key =
-//                   current_transaction.allocateKeyForReference(alloc.getRef());
-//          map.putDestinationKey(alloc, mapped_key);
-//        }
-//      }
-//
-//    }
-//
-//    return map;
-//
-//  }
-
-
-
   // ---------- Inner classes ----------
 
-  private static class ResourceMap {
-
-    private final HashMap<KeyAllocation, Key> transfer_map;
-
-    /**
-     * Constructor.
-     */
-    ResourceMap() {
-      transfer_map = new HashMap(45);
-    }
-
-    /**
-     * Puts a re-mapped key into this map.
-     */
-    void putDestinationKey(KeyAllocation src, Key dst) {
-
-      transfer_map.put(src, dst);
-
-    }
-
-    /**
-     * Given a key in the source transaction (the proposed transaction),
-     * returns a key that is unique within the created transaction.
-     */
-    Key getDestinationKey(final KeyAllocation source_key) {
-
-      // If the source key is in the transfer map,
-      Key tkey = transfer_map.get(source_key);
-      // If not in the map, return the original key otherwise returned the
-      // mapped key.
-      if (tkey == null) {
-        return source_key.getKey();
-      }
-      return tkey;
-
-    }
-
-  }
+//  private static class ResourceMap {
+//
+//    private final HashMap<KeyAllocation, Key> transfer_map;
+//
+//    /**
+//     * Constructor.
+//     */
+//    ResourceMap() {
+//      transfer_map = new HashMap(45);
+//    }
+//
+//    /**
+//     * Puts a re-mapped key into this map.
+//     */
+//    void putDestinationKey(KeyAllocation src, Key dst) {
+//
+//      transfer_map.put(src, dst);
+//
+//    }
+//
+//    /**
+//     * Given a key in the source transaction (the proposed transaction),
+//     * returns a key that is unique within the created transaction.
+//     */
+//    Key getDestinationKey(final KeyAllocation source_key) {
+//
+//      // If the source key is in the transfer map,
+//      Key tkey = transfer_map.get(source_key);
+//      // If not in the map, return the original key otherwise returned the
+//      // mapped key.
+//      if (tkey == null) {
+//        return source_key.getKey();
+//      }
+//      return tkey;
+//
+//    }
+//
+//  }
 
 
   private static final Key ZERO_KEY = new Key((short) 0, (int) 0, (long) 0);

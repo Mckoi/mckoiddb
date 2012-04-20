@@ -851,7 +851,7 @@ class ODBTransactionImpl implements ODBTransaction {
   /**
    * Updates the lookup table status with the max key.
    */
-  void updateResourceLookupManager(Key max_key) {
+  void updateResourceLookupMaxKey(Key max_key) {
 
     DataFile counter =
             transaction.getDataFile(RESOURCE_COUNTER_KEY, getReadWriteMode());
@@ -863,6 +863,22 @@ class ODBTransactionImpl implements ODBTransaction {
 
   }
 
+  /**
+   * Returns the current maximum key in the lookup table.
+   */
+  Key getResourceLookupMaxKey() {
+    
+    DataFile counter =
+            transaction.getDataFile(RESOURCE_COUNTER_KEY, getReadWriteMode());
+
+    counter.position(0);
+    long val1 = counter.getLong();
+    long val2 = counter.getLong();
+
+    // Turn it into a key,
+    return new Key((short) 0, (int) (10 + val1), val2);
+
+  }
 
   /**
    * Copies a dictionary addition to the destination transaction.
