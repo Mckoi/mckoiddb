@@ -364,7 +364,9 @@ class TCPNetworkConnector implements NetworkConnector {
       }
       catch (IOException e) {
 
-        log.log(Level.SEVERE, "IOException processing a message", e);
+        if (try_count == 0) {
+          log.log(Level.SEVERE, "IOException processing a message", e);
+        }
 
         // On an IOException we invalidate the connection forcing the
         // system to create a new socket. The reason for this is because an

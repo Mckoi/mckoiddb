@@ -34,7 +34,6 @@ import com.mckoi.network.DataAddress;
  * @author Tobias Downer
  */
 
-// NOT ODBTrustedObject. Exposes ODBSession.
 public class ODBRootAddress {
 
   private final ODBSession session;

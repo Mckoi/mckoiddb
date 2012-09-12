@@ -154,15 +154,37 @@ public class MckoiDDBClientUtils {
     String global_node_cache_str =
             p.getProperty("global_cache_size", "32MB").trim();
 
+    int introduced_latency;
+    long transaction_node_cache;
+    long global_node_cache;
+
     // NOTE: This value is for testing purposes to simulate high latency
     //   network conditions.
-    int introduced_latency = Integer.parseInt(introduced_latency_str);
+    try {
+      introduced_latency = Integer.parseInt(introduced_latency_str);
+    }
+    catch (NumberFormatException e) {
+      throw new RuntimeException(
+        "'introduced_latency' property invalid in client configuration.", e);
+    }
     // Transaction cache,
-    long transaction_node_cache =
+    try {
+      transaction_node_cache =
             GeneralParser.parseSizeByteFormat(transaction_node_cache_str);
+    }
+    catch (NumberFormatException e) {
+      throw new RuntimeException(
+        "'transaction_cache_size' property invalid in client configuration.", e);
+    }
     // Global cache,
-    long global_node_cache =
+    try {
+      global_node_cache =
             GeneralParser.parseSizeByteFormat(global_node_cache_str);
+    }
+    catch (NumberFormatException e) {
+      throw new RuntimeException(
+        "'global_cache_size' property invalid in client configuration.", e);
+    }
 
     CacheConfiguration cache_config = new CacheConfiguration();
     cache_config.setGlobalNodeCacheSize(global_node_cache);
@@ -171,7 +193,17 @@ public class MckoiDDBClientUtils {
     int sz = man_strings.length;
     ServiceAddress[] manager_addresses = new ServiceAddress[sz];
     for (int i = 0; i < sz; ++i) {
-      manager_addresses[i] = ServiceAddress.parseString(man_strings[i].trim());
+      try {
+        manager_addresses[i] = ServiceAddress.parseString(man_strings[i].trim());
+      }
+      catch (IOException e) {
+        throw new RuntimeException(
+          "'manager_address' property invalid in client configuration.", e);
+      }
+      catch (NumberFormatException e) {
+        throw new RuntimeException(
+          "'manager_address' property invalid in client configuration.", e);
+      }
     }
 
     // Create the network cache for this connection,
@@ -180,7 +212,6 @@ public class MckoiDDBClientUtils {
 
     // Direct client connect
     if (connect_type.equals("direct")) {
-
 
       return connectTCP(manager_addresses, net_password, introduced_latency,
                         net_cache, transaction_node_cache);
@@ -204,14 +235,24 @@ public class MckoiDDBClientUtils {
       try {
         pport = Integer.parseInt(proxy_port);
       }
-      catch (Throwable e) {
-        throw new RuntimeException("Unable to parse proxy port property.");
+      catch (NumberFormatException e) {
+        throw new RuntimeException(
+          "'proxy_port' property invalid in client configuration.", e);
       }
 
-      InetAddress phost = InetAddress.getByName(proxy_host);
+      InetAddress phost;
+      try {
+        phost = InetAddress.getByName(proxy_host);
+      }
+      catch (IOException e) {
+        throw new RuntimeException(
+          "'proxy_host' property invalid in client configuration.", e);
+      }
+
       return connectProxyTCP(phost, pport,
                          manager_addresses, net_password, introduced_latency,
                          net_cache, transaction_node_cache);
+
     }
 
     else {

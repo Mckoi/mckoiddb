@@ -163,6 +163,24 @@ class NetworkTreeSystem implements TreeSystem {
   }
 
   /**
+   * Throws an external message exception when such messages need to be
+   * thrown as an exception. Wraps the exception appropriately for the client
+   * to determine the type of error.
+   */
+  private static void throwMessageException(Message m) {
+    // If it's a connection fail message,
+    ClientRuntimeException client_ex;
+    if (isConnectionFailMessage(m)) {
+      client_ex = new ServiceNotConnectedException(m.getErrorMessage());
+    }
+    else {
+      client_ex = new ClientRuntimeException(m.getErrorMessage());
+    }
+    client_ex.setExternalThrowable(m.getExternalThrowable());
+    throw client_ex;
+  }
+
+  /**
    * Given a DataInputStream, reads a single node from stream and returns the
    * byte[] content of the node data. The byte array content is appropriate
    * for serializing in a block file.
@@ -338,7 +356,10 @@ class NetworkTreeSystem implements TreeSystem {
         // service not available exception.
         if (isConnectionFailMessage(m)) {
           service_tracker.reportServiceDownClientReport(root_server, "root");
-          throw new ServiceNotConnectedException(root_server.displayString());
+          ClientRuntimeException client_ex =
+                 new ServiceNotConnectedException(root_server.displayString());
+          client_ex.setExternalThrowable(m.getExternalThrowable());
+          throw client_ex;
         }
 
         String error_class_name = m.getExternalThrowable().getClassName();
@@ -379,10 +400,12 @@ class NetworkTreeSystem implements TreeSystem {
 
       for (Message m : msg_in) {
         if (m.isError()) {
-          log.log(Level.SEVERE, "'getPathInfoFor' command failed: {0}",
-                                m.getErrorMessage());
-          log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
-          throw new RuntimeException(m.getErrorMessage());
+//          log.log(Level.SEVERE, "'getPathInfoFor' command failed: {0}",
+//                                m.getErrorMessage());
+//          log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+
+          throwMessageException(m);
+
         }
         else {
           path_info = (PathInfo) m.param(0);
@@ -531,11 +554,12 @@ class NetworkTreeSystem implements TreeSystem {
         }
         else {
 
-          log.log(Level.SEVERE, "'performCommit' command failed: {0}",
-                            m.getErrorMessage());
-          log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+//          log.log(Level.SEVERE, "'performCommit' command failed: {0}",
+//                            m.getErrorMessage());
+//          log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
 
-          throw new RuntimeException(m.getErrorMessage());
+          throwMessageException(m);
+
         }
       }
       // Return the DataAddress of the result transaction,
@@ -563,10 +587,12 @@ class NetworkTreeSystem implements TreeSystem {
 
     for (Message m : msg_in) {
       if (m.isError()) {
-        log.log(Level.SEVERE, "'getAllPaths' command failed: {0}",
-                              m.getErrorMessage());
-        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
-        throw new RuntimeException(m.getErrorMessage());
+//        log.log(Level.SEVERE, "'getAllPaths' command failed: {0}",
+//                              m.getErrorMessage());
+//        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+
+        throwMessageException(m);
+
       }
       else {
         return (String[]) m.param(0);
@@ -599,10 +625,12 @@ class NetworkTreeSystem implements TreeSystem {
 
     Message m = processSingleRoot(msg_out, root_server);
     if (m.isError()) {
-      log.log(Level.SEVERE, "'internalGetPathNow' command failed: {0}",
-                            m.getErrorMessage());
-      log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
-      throw new RuntimeException(m.getErrorMessage());
+//      log.log(Level.SEVERE, "'internalGetPathNow' command failed: {0}",
+//                            m.getErrorMessage());
+//      log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+
+      throwMessageException(m);
+
     }
     return (DataAddress) m.param(0);
   }
@@ -654,11 +682,12 @@ class NetworkTreeSystem implements TreeSystem {
     Message m = processSingleRoot(msg_out, server);
     if (m.isError()) {
 
-      log.log(Level.SEVERE, "'internalGetPathHistorical' command failed: {0}",
-                            m.getErrorMessage());
-      log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+//      log.log(Level.SEVERE, "'internalGetPathHistorical' command failed: {0}",
+//                            m.getErrorMessage());
+//      log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
 
-      throw new RuntimeException(m.getErrorMessage());
+      throwMessageException(m);
+
     }
 
     return (DataAddress[]) m.param(0);
@@ -967,11 +996,12 @@ interface_loop:
     for (Message m : message_in) {
       if (m.isError()) {
         
-        log.log(Level.SEVERE, "'getServerListsForBlocks' command failed: {0}",
-                              m.getErrorMessage());
-        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+//        log.log(Level.SEVERE, "'getServerListsForBlocks' command failed: {0}",
+//                              m.getErrorMessage());
+//        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
 
-        throw new RuntimeException(m.getErrorMessage());
+        throwMessageException(m);
+
       }
       else {
         int sz = (Integer) m.param(0);
@@ -1519,11 +1549,12 @@ interface_loop:
     for (Message m : result_stream) {
       if (m.isError()) {
 
-        log.log(Level.SEVERE, "'internalPerformTreeWrite' command failed: {0}",
-                              m.getErrorMessage());
-        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
+//        log.log(Level.SEVERE, "'internalPerformTreeWrite' command failed: {0}",
+//                              m.getErrorMessage());
+//        log.log(Level.SEVERE, m.getExternalThrowable().getStackTrace());
 
-        throw new RuntimeException(m.getErrorMessage());
+        throwMessageException(m);
+
       }
       else {
         DataAddress addr = (DataAddress) m.param(0);
