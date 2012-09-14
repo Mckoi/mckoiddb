@@ -29,14 +29,8 @@ import com.mckoi.network.AdminInterpreter;
 import com.mckoi.network.NetworkConfigResource;
 import com.mckoi.network.NetworkProfile;
 import com.mckoi.util.CommandLine;
-import java.io.Console;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,7 +63,26 @@ public class AdminConsole {
     CommandLine command_line = new CommandLine(args);
     boolean failed = false;
     try {
-      network_conf_arg = command_line.switchArgument("-netconfig", "network.conf");
+      
+      // Fetch the location of the 'network.conf' file, either by reading
+      // it from the 'netconfig' switch or dereferencing it from the
+      // 'netconfinfo' location.
+      String network_config_val = command_line.switchArgument("-netconfig");
+      String netconf_info_val = command_line.switchArgument("-netconfinfo");
+      if (netconf_info_val != null) {
+        Properties nci = new Properties();
+        FileReader r = new FileReader(new File(netconf_info_val));
+        nci.load(r);
+        network_conf_arg = nci.getProperty("netconf_location");
+        r.close();
+      }
+      else if (network_config_val != null) {
+        network_conf_arg = network_config_val;
+      }
+      else {
+        network_conf_arg = "network.conf";
+      }
+      
       network_pass_arg = command_line.switchArgument("-netpassword");
       no_console = command_line.containsSwitch("-noconsole");
     }
@@ -124,28 +137,11 @@ public class AdminConsole {
       try {
         NetworkConfigResource network_conf_resource =
                                 NetworkConfigResource.parse(network_conf_arg);
-//        File schema_dir = new File(base_path_arg, "admin");
-//        if (!schema_dir.exists()) {
-//          schema_dir.mkdir();
-//        }
-//        else if (!schema_dir.isDirectory()) {
-//          throw new RuntimeException(
-//                       "Can't make network schema directory: " + schema_dir);
-//        }
-//
-//        File schema_file = new File(schema_dir, "network_schema");
-//        // If the file doesn't exist, create it
-//        if (!schema_file.exists()) {
-//          schema_file.createNewFile();
-//        }
 
         NetworkProfile network_profile =
                                    NetworkProfile.tcpConnect(network_pass_arg);
         network_profile.setNetworkConfiguration(network_conf_resource);
 
-//        FileReader schema_in = new FileReader(schema_file);
-//        network_profile.readNetworkSchema(schema_in);
-//        schema_in.close();
         AdminInterpreter interpreter =
                      new AdminInterpreter(r, w, network_profile,
                                           display_prompt);
@@ -153,7 +149,7 @@ public class AdminConsole {
 
       }
       catch (IOException e) {
-        e.printStackTrace();
+        e.printStackTrace(System.err);
       }
     }
 

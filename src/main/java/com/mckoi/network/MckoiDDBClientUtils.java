@@ -189,31 +189,32 @@ public class MckoiDDBClientUtils {
     CacheConfiguration cache_config = new CacheConfiguration();
     cache_config.setGlobalNodeCacheSize(global_node_cache);
 
-    String[] man_strings = manager_addr.split(",");
-    int sz = man_strings.length;
-    ServiceAddress[] manager_addresses = new ServiceAddress[sz];
-    for (int i = 0; i < sz; ++i) {
-      try {
-        manager_addresses[i] = ServiceAddress.parseString(man_strings[i].trim());
-      }
-      catch (IOException e) {
+    // Parse the manager servers list,
+    ServiceAddress[] manager_servers;
+    try {
+      manager_servers = ServiceAddress.parseServiceAddresses(manager_addr);
+      if (manager_servers.length == 0) {
         throw new RuntimeException(
-          "'manager_address' property invalid in client configuration.", e);
+                "'manager_address' property invalid in client configuration.");
       }
-      catch (NumberFormatException e) {
-        throw new RuntimeException(
-          "'manager_address' property invalid in client configuration.", e);
-      }
+    }
+    catch (IOException e) {
+      throw new RuntimeException(
+        "'manager_address' property invalid in client configuration.", e);
+    }
+    catch (NumberFormatException e) {
+      throw new RuntimeException(
+        "'manager_address' property invalid in client configuration.", e);
     }
 
     // Create the network cache for this connection,
     LocalNetworkCache net_cache =
-               JVMState.getJVMCacheForManager(manager_addresses, cache_config);
+               JVMState.getJVMCacheForManager(manager_servers, cache_config);
 
     // Direct client connect
     if (connect_type.equals("direct")) {
 
-      return connectTCP(manager_addresses, net_password, introduced_latency,
+      return connectTCP(manager_servers, net_password, introduced_latency,
                         net_cache, transaction_node_cache);
 
     }
@@ -250,7 +251,7 @@ public class MckoiDDBClientUtils {
       }
 
       return connectProxyTCP(phost, pport,
-                         manager_addresses, net_password, introduced_latency,
+                         manager_servers, net_password, introduced_latency,
                          net_cache, transaction_node_cache);
 
     }

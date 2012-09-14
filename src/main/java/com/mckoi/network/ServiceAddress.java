@@ -154,7 +154,8 @@ public final class ServiceAddress implements Comparable {
   /**
    * Parses a service address generated from 'formatString'.
    */
-  public static ServiceAddress parseString(String str) throws IOException {
+  public static ServiceAddress parseString(String str)
+                                    throws IOException, NumberFormatException {
     int p = str.lastIndexOf(":");
     if (p == -1) {
       throw new IOException("Bad line format (didn't find ':') for: " + str);
@@ -195,6 +196,7 @@ public final class ServiceAddress implements Comparable {
     return cached_display_string;
   }
 
+  @Override
   public String toString() {
     StringBuilder buf = new StringBuilder();
     buf.append(asInetAddress().toString());
@@ -202,10 +204,48 @@ public final class ServiceAddress implements Comparable {
     buf.append(port);
     return buf.toString();
   }
-  
+
+  /**
+   * Parses a comma deliminated service address string and returns it as
+   * an array of ServiceAddress objects. For example;
+   * "192.168.1.100:40111 , 192.168.4.20:40111"
+   */
+  public static ServiceAddress[] parseServiceAddresses(
+      String service_addresses_str) throws IOException, NumberFormatException {
+
+    String[] service_addr_str_arr = service_addresses_str.split(",");
+    int sz = service_addr_str_arr.length;
+    ServiceAddress[] service_addr_arr = new ServiceAddress[sz];
+    for (int i = 0; i < sz; ++i) {
+      service_addr_arr[i] =
+                   ServiceAddress.parseString(service_addr_str_arr[i].trim());
+    }
+    return service_addr_arr;
+
+  }
+
+  /**
+   * Formats a list of service address objects into a comma deliminated string.
+   * This is the formatting side of 'parseServiceAddresses'.
+   */
+  public static String formatServiceAddresses(ServiceAddress[] arr) {
+
+    StringBuilder b = new StringBuilder();
+    boolean first = true;
+    for (ServiceAddress addr : arr) {
+      if (!first) {
+        b.append(" , ");
+      }
+      b.append(addr.formatString());
+      first = false;
+    }
+    return b.toString();
+
+  }
 
   // -- Hashcode and equals implementation, so this can be a node of a map --
 
+  @Override
   public int hashCode() {
     int v = 0;
     for (int i = 0; i < net_address.length; ++i) {
@@ -215,6 +255,7 @@ public final class ServiceAddress implements Comparable {
     return v;
   }
 
+  @Override
   public boolean equals(Object ob) {
     if (this == ob) {
       return true;
@@ -233,6 +274,7 @@ public final class ServiceAddress implements Comparable {
     return true;
   }
 
+  @Override
   public int compareTo(Object ob) {
     if (this == ob) {
       return 0;

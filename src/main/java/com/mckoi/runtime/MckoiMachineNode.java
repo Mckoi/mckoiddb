@@ -59,8 +59,27 @@ public class MckoiMachineNode {
       CommandLine command_line = new CommandLine(args);
       boolean failed = false;
       try {
+
+        // Fetch the location of the 'network.conf' file, either by reading
+        // it from the 'netconfig' switch or dereferencing it from the
+        // 'netconfinfo' location.
+        String network_config_val = command_line.switchArgument("-netconfig");
+        String netconf_info_val = command_line.switchArgument("-netconfinfo");
+        if (netconf_info_val != null) {
+          Properties nci = new Properties();
+          FileReader r = new FileReader(new File(netconf_info_val));
+          nci.load(r);
+          net_config = nci.getProperty("netconf_location");
+          r.close();
+        }
+        else if (network_config_val != null) {
+          net_config = network_config_val;
+        }
+        else {
+          net_config = "network.conf";
+        }
+        
         node_config = command_line.switchArgument("-nodeconfig", "node.conf");
-        net_config = command_line.switchArgument("-netconfig", "network.conf");
         host_arg = command_line.switchArgument("-host");
         port_arg = command_line.switchArgument("-port");
       }
@@ -142,10 +161,10 @@ public class MckoiMachineNode {
 
     }
     catch (UnknownHostException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
     }
     catch (IOException e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
     }
 
   }
