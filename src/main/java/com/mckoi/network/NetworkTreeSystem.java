@@ -385,7 +385,8 @@ class NetworkTreeSystem implements TreeSystem {
    * the path name, and next time this function is called a forced refresh
    * of the PathInfo from the manager server cluster will occur.
    */
-  private PathInfo getPathInfoFor(String path_name) {
+  private PathInfo getPathInfoFor(String path_name)
+                                             throws PathNotAvailableException {
     PathInfo path_info = local_network_cache.getPathInfo(path_name);
     if (path_info == null) {
       // Path info not found in the cache, so query the manager cluster for the
@@ -412,8 +413,9 @@ class NetworkTreeSystem implements TreeSystem {
         }
       }
 
+      // If the path isn't found,
       if (path_info == null) {
-        throw new RuntimeException("Path not found: " + path_name);
+        throw new PathNotAvailableException("Path not found: " + path_name);
       }
 
       // Put it in the local cache,
@@ -614,9 +616,12 @@ class NetworkTreeSystem implements TreeSystem {
 
   /**
    * Internal method that fetches the current root from the root server.
+   * Throws PathNotAvailableException if there are currently no snapshots
+   * stored on the path.
    */
   private DataAddress internalGetPathNow(PathInfo path_info,
-                                         ServiceAddress root_server) {
+                                         ServiceAddress root_server)
+                                             throws PathNotAvailableException {
     MessageStream msg_out = new MessageStream(16);
     msg_out.addMessage("getPathNow");
     msg_out.addString(path_info.getPathName());
@@ -632,7 +637,12 @@ class NetworkTreeSystem implements TreeSystem {
       throwMessageException(m);
 
     }
-    return (DataAddress) m.param(0);
+    DataAddress data_addr = (DataAddress) m.param(0);
+    if (data_addr == null) {
+      throw new PathNotAvailableException(
+                           "No snapshots on path: " + path_info.getPathName());
+    }
+    return data_addr;
   }
 
   /**

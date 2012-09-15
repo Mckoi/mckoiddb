@@ -107,6 +107,11 @@ public class AdminConsole {
       System.out.println("-netconfig [local file or URL]");
       System.out.println("  Either a path or URL of the location of the network ");
       System.out.println("  configuration file (default: network.conf).");
+      System.out.println("-netconfinfo [local file]");
+      System.out.println("  A file that contains a 'netconf_location' property that is ");
+      System.out.println("  either a URL or File location of the network.conf resource.");
+      System.out.println("    (The command line arguments must have either a -netconfig");
+      System.out.println("     or -netconfinfo argument)");
       System.out.println("-netpassword [password]");
       System.out.println("  The challenge password used in all connection handshaking");
       System.out.println("  throughout the Mckoi network. All machines must have the");

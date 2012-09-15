@@ -688,8 +688,8 @@ public class TCPInstanceAdminServer implements Runnable {
       b.append(bind_interface.getHostAddress());
       b.append(":");
       b.append(port);
-      msg_out.addExternalThrowable(
-              new ExternalThrowable(new RuntimeException(b.toString())));
+      msg_out.addExternalThrowable(new ExternalThrowable(
+                              new ServiceNotConnectedException(b.toString())));
       msg_out.closeMessage();
       return msg_out;
     }
