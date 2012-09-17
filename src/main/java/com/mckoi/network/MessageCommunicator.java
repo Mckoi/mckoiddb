@@ -89,7 +89,7 @@ public class MessageCommunicator {
    * method returns immediately, the messages are retried on a timer thread.
    */
   void retryMessagesFor(final ServiceAddress address) {
-    RetryMessageQueue queue = null;
+    RetryMessageQueue queue;
     synchronized (queue_map) {
       queue = queue_map.get(address);
     }
@@ -98,6 +98,7 @@ public class MessageCommunicator {
 
       // Schedule on the timer queue,
       timer.schedule(new TimerTask() {
+        @Override
         public void run() {
           ArrayList<String> types;
           ArrayList<MessageStream> messages;
@@ -264,7 +265,7 @@ public class MessageCommunicator {
     // Handle the response,
     for (Message m : message_in) {
       if (m.isError()) {
-        log.log(Level.SEVERE, "Root error: " + m.getErrorMessage());
+        log.log(Level.SEVERE, "Root error: {0}", m.getErrorMessage());
 
         // If we failed, add the message to the retry queue,
         if (queue != null) {
@@ -300,7 +301,7 @@ public class MessageCommunicator {
     // Handle the response,
     for (Message m : message_in) {
       if (m.isError()) {
-        log.log(Level.SEVERE, "Manager error: " + m.getErrorMessage());
+        log.log(Level.SEVERE, "Manager error: {0}", m.getErrorMessage());
 
         // If we failed, add the message to the retry queue,
         if (queue != null) {

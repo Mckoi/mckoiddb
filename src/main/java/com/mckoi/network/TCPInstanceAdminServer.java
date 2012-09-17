@@ -124,7 +124,9 @@ public class TCPInstanceAdminServer implements Runnable {
    * For managing startup notification.
    */
   private final Object startup_lock = new Object();
+  private boolean run_invoked = false;
   private boolean instance_started = false;
+  private boolean instance_stopped = false;
   
 
   /**
@@ -138,7 +140,7 @@ public class TCPInstanceAdminServer implements Runnable {
     connection_list = new ArrayList();
 
     // Set the log level,
-    String val = node_properties.getProperty("log_level");
+    String val = node_properties.getProperty("log_level", "info");
     if (val != null) {
       log.setLevel(Level.parse(val.toUpperCase(Locale.ENGLISH)));
     }
@@ -159,7 +161,7 @@ public class TCPInstanceAdminServer implements Runnable {
       if (!val.endsWith("/")) {
         val = val + "/";
       }
-      val = val + "node.log";
+      val = val + "ddb.log";
 
       // Output to the log file,
       FileHandler fhandler = new FileHandler(val, true);
@@ -214,7 +216,7 @@ public class TCPInstanceAdminServer implements Runnable {
         throw new RuntimeException("\"node_directory\" value is not a directory.");
       }
       this.base_path = f;
-      log.config("Set node directory to " + val);
+      log.log(Level.CONFIG, "Set node directory to {0}", val);
     }
 
     // The thread pool for servicing client requests,
@@ -407,7 +409,7 @@ public class TCPInstanceAdminServer implements Runnable {
    */
   public void waitUntilStopped() {
     synchronized (startup_lock) {
-      while (instance_started) {
+      while (!instance_stopped) {
         try {
           startup_lock.wait();
         }
@@ -424,6 +426,14 @@ public class TCPInstanceAdminServer implements Runnable {
    */
   @Override
   public void run() {
+    
+    synchronized (startup_lock) {
+      if (run_invoked) {
+        throw new RuntimeException("Service was run before.");
+      }
+      run_invoked = true;
+    }
+
     // The timer thread,
     this.timer = new ExceptionCatchingTimer(true);
 
@@ -509,6 +519,10 @@ public class TCPInstanceAdminServer implements Runnable {
       catch (IOException e) {
         log.log(Level.WARNING, "Socket Closed");
       }
+      catch (Exception e) {
+        log.log(Level.SEVERE,
+                "DDB instance service stopped because of exception.", e);
+      }
 
     }
     finally {
@@ -563,7 +577,8 @@ public class TCPInstanceAdminServer implements Runnable {
       
         // Reset the 'instance_started' flag.
         synchronized (startup_lock) {
-          instance_started = false;
+          instance_started = true;
+          instance_stopped = true;
           startup_lock.notifyAll();
         }
 
