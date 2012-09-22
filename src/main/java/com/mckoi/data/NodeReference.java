@@ -209,23 +209,28 @@ public final class NodeReference extends Integer128Bit {
 
     // ---------- Implemented from TreeLeaf ----------
 
+    @Override
     public NodeReference getReference() {
       return node_ref;
     }
 
+    @Override
     public int getSize() {
       return leaf_size;
     }
 
+    @Override
     public int getCapacity() {
       throw new RuntimeException(
                            "Static node does not have a meaningful capacity.");
     }
 
+    @Override
     public byte get(int position) throws IOException {
       return sparce_byte;
     }
 
+    @Override
     public void get(int position, byte[] buf, int off, int len)
                                                           throws IOException {
       int end = off + len;
@@ -234,6 +239,7 @@ public final class NodeReference extends Integer128Bit {
       }
     }
 
+    @Override
     public void writeDataTo(AreaWriter writer) throws IOException {
       int sz = getSize();
       for (int i = 0; i < sz; ++i) {
@@ -241,17 +247,20 @@ public final class NodeReference extends Integer128Bit {
       }
     }
 
+    @Override
     public void shift(int position, int offset) throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
     }
 
+    @Override
     public void put(int position, byte[] buf, int off, int len)
                                                           throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
     }
 
+    @Override
     public void setSize(int size) throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
@@ -260,6 +269,7 @@ public final class NodeReference extends Integer128Bit {
     /**
      * Returns a heap size estimate for this node
      */
+    @Override
     public int getHeapSizeEstimate() {
       // The size of the member variables +96 byte estimate for heap use for
       // Java object maintenance.

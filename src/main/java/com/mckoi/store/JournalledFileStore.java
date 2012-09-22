@@ -93,19 +93,22 @@ public final class JournalledFileStore extends AbstractStore {
     return store_resource.exists();
   }
 
+  @Override
   public void lockForWrite() {
     try {
       buffer_manager.lockForWrite();
     }
     catch (InterruptedException e) {
-      throw new Error("Interrupted: " + e.getMessage());
+      throw new Error("Interrupted", e);
     }
   }
 
+  @Override
   public void unlockForWrite() {
     buffer_manager.unlockForWrite();
   }
   
+  @Override
   public void checkPoint() throws InterruptedException, IOException {
     // We don't flush the log (it's only necessary to flush the log for small
     // updates such as initialization procedures).
@@ -118,6 +121,7 @@ public final class JournalledFileStore extends AbstractStore {
    * Internally opens the backing area.  If 'read_only' is true then the
    * store is opened in read only mode.
    */
+  @Override
   protected void internalOpen(boolean read_only) throws IOException {
     store_resource.open(read_only);
   }
@@ -125,41 +129,49 @@ public final class JournalledFileStore extends AbstractStore {
   /**
    * Internally closes the backing area.
    */
+  @Override
   protected void internalClose() throws IOException {
     store_resource.close();
   }
 
 
+  @Override
   protected int readByteFrom(long position) throws IOException {
     return buffer_manager.readByteFrom(store_resource, position);
   }
   
+  @Override
   protected int readByteArrayFrom(long position,
                            byte[] buf, int off, int len) throws IOException {
     return buffer_manager.readByteArrayFrom(store_resource,
                                             position, buf, off, len);
   }
   
+  @Override
   protected void writeByteTo(long position, int b) throws IOException {
     buffer_manager.writeByteTo(store_resource, position, b);
   }
 
+  @Override
   protected void writeByteArrayTo(long position,
                            byte[] buf, int off, int len) throws IOException {
     buffer_manager.writeByteArrayTo(store_resource,
                                     position, buf, off, len);
   }
 
+  @Override
   protected long endOfDataAreaPointer() throws IOException {
     return buffer_manager.getDataAreaSize(store_resource);
   }
 
+  @Override
   protected void setDataAreaSize(long new_size) throws IOException {
     buffer_manager.setDataAreaSize(store_resource, new_size);
   }
 
   // For diagnosis
   
+  @Override
   public String toString() {
     return "[ JournalledFileStore: " + resource_name + " ]";
   }

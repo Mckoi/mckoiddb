@@ -94,6 +94,7 @@ public class Integer128Bit implements Comparable<Integer128Bit> {
   /**
    * This is a signed 128-bit comparison.
    */
+  @Override
   public int compareTo(Integer128Bit that) {
     long thish = this.ref[0];
     long thath = that.ref[0];

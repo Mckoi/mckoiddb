@@ -26,8 +26,8 @@
 package com.mckoi.store;
 
 //import java.util.List;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * A store is a resource where areas can be allocated and freed to store

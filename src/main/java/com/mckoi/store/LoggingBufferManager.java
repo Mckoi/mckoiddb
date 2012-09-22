@@ -25,17 +25,16 @@
 
 package com.mckoi.store;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Arrays;
-import java.io.IOException;
-import java.io.File;
 import com.mckoi.debug.DebugLogger;
-import com.mckoi.debug.Lvl;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * A paged random access buffer manager that caches access between a Store and
- * the underlying filesystem and that also handles check point logging and
+ * the underlying file-system and that also handles check point logging and
  * crash recovery (via a JournalledSystem object).
  *
  * @author Tobias Downer
@@ -126,10 +125,10 @@ public class LoggingBufferManager {
   /**
    * Constructs the manager.
    */
-  public LoggingBufferManager(File journal_path, boolean read_only,
-                              int max_pages, int page_size,
-                              StoreDataAccessorFactory sda_factory,
-                              DebugLogger debug, boolean enable_logging) {
+  LoggingBufferManager(File journal_path, boolean read_only,
+                       int max_pages, int page_size,
+                       StoreDataAccessorFactory sda_factory,
+                       DebugLogger debug, boolean enable_logging) {
     this.max_pages = max_pages;
     this.page_size = page_size;
 //    this.page_size = 8192;
@@ -155,6 +154,7 @@ public class LoggingBufferManager {
         DebugLogger debug, boolean enable_logging) {
     this(journal_path, read_only, max_pages, page_size,
          new StoreDataAccessorFactory() {
+      @Override
       public StoreDataAccessor createStoreDataAccessor(String resource_name) {
         return new ScatteringStoreDataAccessor(resource_path, resource_name,
                                                file_ext, max_slice_size);
@@ -514,8 +514,8 @@ public class LoggingBufferManager {
     if (PARANOID_CHECKS) {
       synchronized (write_lock) {
         if (write_lock_count == 0) {
-          System.out.println("Write without a lock!");
-          new Error().printStackTrace();
+          System.err.println("Write without a lock!");
+          new Error().printStackTrace(System.err);
         }
       }
     }
@@ -540,8 +540,8 @@ public class LoggingBufferManager {
     if (PARANOID_CHECKS) {
       synchronized (write_lock) {
         if (write_lock_count == 0) {
-          System.out.println("Write without a lock!");
-          new Error().printStackTrace();
+          System.err.println("Write without a lock!");
+          new Error().printStackTrace(System.err);
         }
       }
     }
@@ -840,8 +840,8 @@ public class LoggingBufferManager {
         catch (IOException e) {
           // This makes debugging a little clearer if 'readPageContent' fails.
           // When 'readPageContent' fails, the dispose method fails also.
-          System.out.println("IO Error during page initialize: " + e.getMessage());
-          e.printStackTrace();
+          System.err.println("IO Error during page initialize");
+          e.printStackTrace(System.err);
           throw e;
         }
 
@@ -917,6 +917,7 @@ public class LoggingBufferManager {
       System.arraycopy(buf, off, buffer, pos, len);
     }
 
+    @Override
     public boolean equals(Object ob) {
       BMPage dest_page = (BMPage) ob;
       return isPage(dest_page.getID(), dest_page.page);
@@ -973,7 +974,7 @@ public class LoggingBufferManager {
      * heavier page is sorted lower and is therefore cleared from the cache
      * faster.
      */
-    private final float pageEnumValue(BMPage page) {
+    private float pageEnumValue(BMPage page) {
       // We fix the access counter so it can not exceed 10000 accesses.  I'm
       // a little unsure if we should put this constant in the equation but it
       // ensures that some old but highly accessed page will not stay in the
@@ -983,6 +984,7 @@ public class LoggingBufferManager {
       return v;
     }
 
+    @Override
     public int compare(Object ob1, Object ob2) {
       float v1 = pageEnumValue((BMPage) ob1);
       float v2 = pageEnumValue((BMPage) ob2);
@@ -1001,15 +1003,14 @@ public class LoggingBufferManager {
    * A factory interface for creating StoreDataAccessor objects from resource
    * names.
    */
-  public static interface StoreDataAccessorFactory {
-    
+  static interface StoreDataAccessorFactory {
+
     /**
      * Returns a StoreDataAccessor object for the given resource name.
      */
-    public StoreDataAccessor createStoreDataAccessor(String resource_name);
-    
+    StoreDataAccessor createStoreDataAccessor(String resource_name);
+
   }
-  
-  
+
 }
 

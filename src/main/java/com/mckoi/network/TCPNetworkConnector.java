@@ -69,7 +69,7 @@ class TCPNetworkConnector implements NetworkConnector {
 
   // ---------- Logging ----------
 
-  private final Logger log;
+  private static final Logger log = Logger.getLogger("com.mckoi.network.Log");
 
 
   /**
@@ -84,8 +84,6 @@ class TCPNetworkConnector implements NetworkConnector {
 
     connection_pool = new HashMap();
     this.password = password;
-
-    log = Logger.getLogger("com.mckoi.network.Log");
 
     // This thread kills connections that have timed out.
     background_thread = new ConnectionDestroyThread(log, connection_pool);
@@ -153,6 +151,7 @@ class TCPNetworkConnector implements NetworkConnector {
   @Override
   public void finalize() throws Throwable {
     background_thread.stopConnectionDestroy();
+    super.finalize();
   }
   
   
@@ -353,7 +352,7 @@ class TCPNetworkConnector implements NetworkConnector {
               Thread.sleep(introduced_latency);
             }
             catch (InterruptedException e) {
-              // Ignore
+              throw new Error("Interrupted", e);
             }
           }
 

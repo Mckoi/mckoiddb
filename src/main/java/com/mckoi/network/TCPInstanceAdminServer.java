@@ -398,7 +398,9 @@ public class TCPInstanceAdminServer implements Runnable {
         try {
           startup_lock.wait();
         }
-        catch (InterruptedException e) { /* ignore */ }
+        catch (InterruptedException e) {
+          throw new Error("Interrupted", e);
+        }
       }
     }
   }
@@ -413,7 +415,9 @@ public class TCPInstanceAdminServer implements Runnable {
         try {
           startup_lock.wait();
         }
-        catch (InterruptedException e) { /* ignore */ }
+        catch (InterruptedException e) {
+          throw new Error("Interrupted", e);
+        }
       }
     }
   }

@@ -140,7 +140,7 @@ public class LocalFileSystemBlockServer {
   /**
    * The logger.
    */
-  private final Logger log = Logger.getLogger("com.mckoi.network.Log");
+  private final static Logger log = Logger.getLogger("com.mckoi.network.Log");
 
 
   /**
@@ -1038,8 +1038,6 @@ public class LocalFileSystemBlockServer {
                   log.log(Level.FINE, "Compressed block size = {0}", compressedf.length());
                   // Wait a little bit and delete the original file,
                   if (finished) {
-                    has_finished = true;
-                    notifyAll();
                     return;
                   }
                   wait(1000);
@@ -1062,18 +1060,13 @@ public class LocalFileSystemBlockServer {
               }
 
               if (finished) {
-                has_finished = true;
-                notifyAll();
                 return;
               }
               wait(200);
 
             }
 
-
             if (finished) {
-              has_finished = true;
-              notifyAll();
               return;
             }
             wait(3000);
@@ -1082,6 +1075,13 @@ public class LocalFileSystemBlockServer {
       }
       catch (InterruptedException e) {
         // InterruptedException causes the thread to end,
+      }
+      // Make sure this is called on thread termination,
+      finally {
+        synchronized (this) {
+          has_finished = true;
+          notifyAll();
+        }
       }
     }
 
@@ -1094,6 +1094,7 @@ public class LocalFileSystemBlockServer {
             wait();
           }
           catch (InterruptedException e) {
+            throw new Error("Interrupted", e);
           }
         }
       }

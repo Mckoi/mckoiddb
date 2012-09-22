@@ -492,6 +492,7 @@ public final class ServiceStatusTracker {
     /**
      * The thread run method,
      */
+    @Override
     public void run() {
       try {
         while (true) {
@@ -508,7 +509,7 @@ public final class ServiceStatusTracker {
           }
           synchronized (monitored_servers) {
             // If there are no servers to monitor, continue the loop,
-            if (monitored_servers.size() == 0) {
+            if (monitored_servers.isEmpty()) {
               continue;
             }
             // Otherwise, copy the monitored servers into the 'servers'

@@ -25,18 +25,14 @@
 
 package com.mckoi.store;
 
-import java.io.*;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import com.mckoi.debug.DebugLogger;
 import com.mckoi.debug.Lvl;
-import com.mckoi.util.ByteArrayUtil;
 import com.mckoi.store.LoggingBufferManager.StoreDataAccessorFactory;
+import com.mckoi.util.ByteArrayUtil;
+import java.io.*;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.Iterator;
+import java.util.*;
 
 /**
  * Manages a journalling data store management system.  All operations are
@@ -70,7 +66,7 @@ class JournalledSystem {
   /**
    * The map of all resources that are available.  (resource_name -> Resource)
    */
-  private HashMap all_resources;
+  private final HashMap all_resources;
 
   /**
    * The unique sequence id counter for this session.
@@ -352,6 +348,7 @@ class JournalledSystem {
 
   private Comparator journal_list_comparator = new Comparator() {
     
+    @Override
     public int compare(Object ob1, Object ob2) {
       JournalSummary js1 = (JournalSummary) ob1;
       JournalSummary js2 = (JournalSummary) ob2;
@@ -528,7 +525,7 @@ class JournalledSystem {
     /**
      * A map between a resource name and an id for this journal file.
      */
-    private HashMap resource_id_map;
+    private final HashMap resource_id_map;
     
     /**
      * The sequence id for resources modified in this log.
@@ -1114,9 +1111,10 @@ class JournalledSystem {
     }
     
 
-     public String toString() {
-       return "[JOURNAL: " + file.getName() + "]";
-     }
+    @Override
+    public String toString() {
+      return "[JOURNAL: " + file.getName() + "]";
+    }
      
   }
   
@@ -1256,6 +1254,7 @@ class JournalledSystem {
     /**
      * Returns the size of the page.
      */
+    @Override
     public int getPageSize() {
       return page_size;
     }    
@@ -1263,11 +1262,13 @@ class JournalledSystem {
     /**
      * Returns the unique id of this page.
      */
+    @Override
     public long getID() {
       return id;
     }
 
 
+    @Override
     public String toString() {
       return name;
     }
@@ -1290,28 +1291,34 @@ class JournalledSystem {
 
     // ---------- Persist methods ----------
     
+    @Override
     void persistClose() throws IOException {
       // No-op
     }
 
+    @Override
     public void persistDelete() throws IOException {
       // No-op
     }
     
+    @Override
     public void persistSetSize(final long new_size) throws IOException {
       // No-op
     }
     
+    @Override
     public void persistPageChange(final long page, final int page_size,
                                   final int off, int len,
                                   DataInputStream din) throws IOException {
       // No-op
     }
 
+    @Override
     public void synch() throws IOException {
       data.synch();
     }
 
+    @Override
     public void notifyPostRecover() {
       // No-op
     }
@@ -1321,6 +1328,7 @@ class JournalledSystem {
     /**
      * Opens the resource.
      */
+    @Override
     public void open(boolean read_only) throws IOException {
       this.read_only = read_only;
       data.open(read_only);
@@ -1329,6 +1337,7 @@ class JournalledSystem {
     /**
      * Reads a page from the resource.
      */
+    @Override
     public void read(final long page_number,
                      final byte[] buf, final int off) throws IOException {
       // Read the data.
@@ -1347,6 +1356,7 @@ class JournalledSystem {
     /**
      * Writes a page of some previously specified size.
      */
+    @Override
     public void write(final long page_number,
                       byte[] buf, int off, int len) throws IOException {
       long page_position = page_number * page_size;
@@ -1356,6 +1366,7 @@ class JournalledSystem {
     /**
      * Sets the size of the resource.
      */
+    @Override
     public void setSize(long size) throws IOException {
       data.setSize(size);
     }
@@ -1363,6 +1374,7 @@ class JournalledSystem {
     /**
      * Returns the size of this resource.
      */
+    @Override
     public long getSize() throws IOException {
       return data.getSize();
     }
@@ -1370,6 +1382,7 @@ class JournalledSystem {
     /**
      * Closes the resource.
      */
+    @Override
     public void close() throws IOException {
       data.close();
     }
@@ -1377,6 +1390,7 @@ class JournalledSystem {
     /**
      * Deletes the resource.
      */
+    @Override
     public void delete() throws IOException {
       data.delete();
     }
@@ -1384,6 +1398,7 @@ class JournalledSystem {
     /**
      * Returns true if the resource currently exists.
      */
+    @Override
     public boolean exists() {
       return data.exists();
     }
@@ -1471,6 +1486,7 @@ class JournalledSystem {
       }
     }
     
+    @Override
     void persistClose() throws IOException {
 //      System.out.println(name + " Close");
       if (really_open) {
@@ -1483,6 +1499,7 @@ class JournalledSystem {
       }
     }
 
+    @Override
     public void persistDelete() throws IOException {
 //      System.out.println(name + " Delete");
       // If open then close
@@ -1493,6 +1510,7 @@ class JournalledSystem {
       there_is_backing_data = false;
     }
     
+    @Override
     public void persistSetSize(final long new_size) throws IOException {
 //      System.out.println(name + " Set Size " + size);
       // If not open then open.
@@ -1505,6 +1523,7 @@ class JournalledSystem {
       }
     }
     
+    @Override
     public void persistPageChange(final long page, final int page_size,
                                   final int off, int len,
                                   DataInputStream din) throws IOException {
@@ -1532,12 +1551,14 @@ class JournalledSystem {
       data.write(pos + off, buf, 0, len);
     }
 
+    @Override
     public void synch() throws IOException {
       if (really_open) {
         data.synch();
       }
     }
 
+    @Override
     public void notifyPostRecover() {
       data_exists = data.exists();
     }
@@ -1551,6 +1572,7 @@ class JournalledSystem {
      * modifications of a page.  If it does exist it opens the resource and uses
      * that as the backing to any 'read' operations.
      */
+    @Override
     public void open(boolean read_only) throws IOException {
       this.read_only = read_only;
       
@@ -1571,6 +1593,7 @@ class JournalledSystem {
      * from the underlying data, and from any journal entries.  This should
      * read the data to be put into a buffer in memory.
      */
+    @Override
     public void read(final long page_number,
                      final byte[] buf, final int off) throws IOException {
 
@@ -1673,6 +1696,7 @@ class JournalledSystem {
      * will add a single entry to the log and any 'read' operations after will
      * contain the written data.
      */
+    @Override
     public void write(final long page_number,
                       byte[] buf, int off, int len) throws IOException {
 
@@ -1761,6 +1785,7 @@ class JournalledSystem {
     /**
      * Sets the size of the resource.
      */
+    @Override
     public void setSize(long size) throws IOException {
       synchronized (journal_map) {
         this.size = size;
@@ -1773,6 +1798,7 @@ class JournalledSystem {
     /**
      * Returns the size of this resource.
      */
+    @Override
     public long getSize() throws IOException {
       synchronized (journal_map) {
         return this.size;
@@ -1783,6 +1809,7 @@ class JournalledSystem {
      * Closes the resource.  This will actually simply log that the resource
      * has been closed.
      */
+    @Override
     public void close() throws IOException {
       synchronized (journal_map) {
         data_open = false;
@@ -1793,6 +1820,7 @@ class JournalledSystem {
      * Deletes the resource.  This will actually simply log that the resource
      * has been deleted.
      */
+    @Override
     public void delete() throws IOException {
       // Log that this resource was deleted.
       synchronized (top_journal_lock) {
@@ -1808,6 +1836,7 @@ class JournalledSystem {
     /**
      * Returns true if the resource currently exists.
      */
+    @Override
     public boolean exists() {
       return data_exists;
     }
@@ -1850,7 +1879,7 @@ class JournalledSystem {
   }
 
   /**
-   * Thread that persists the journal in the backgroudn.
+   * Thread that persists the journal in the background.
    */
   private class JournalingThread extends Thread {
 
@@ -1868,76 +1897,82 @@ class JournalledSystem {
     }
 
     
+    @Override
     public void run() {
       boolean local_finished = false;
 
-      while (!local_finished) {
+      try {
 
-        ArrayList to_process = null;
-        synchronized (top_journal_lock) {
-          if (journal_archives.size() > 0) {
-            to_process = new ArrayList();
-            to_process.addAll(journal_archives);
+        while (!local_finished) {
+
+          ArrayList to_process = null;
+          synchronized (top_journal_lock) {
+            if (journal_archives.size() > 0) {
+              to_process = new ArrayList();
+              to_process.addAll(journal_archives);
+            }
           }
-        }
 
-        if (to_process == null) {
-          // Nothing to process so wait
-          synchronized (this) {
-            if (!finished) {
-              try {
+          if (to_process == null) {
+            // Nothing to process so wait
+            synchronized (this) {
+              if (!finished) {
                 wait();
               }
-              catch (InterruptedException e) { /* ignore */ }
             }
-          }
 
-        }
-        else if (to_process.size() > 0) {
-          // Something to process, so go ahead and process the journals,
-          int sz = to_process.size();
-          // For all journals
-          for (int i = 0; i < sz; ++i) {
-            // Pick the lowest journal to persist
-            JournalFile jf = (JournalFile) to_process.get(i);
-            try {
-              // Persist the journal
-              jf.persist(8, jf.size());
-              // Close and then delete the journal file
-              jf.closeAndDelete();
-            }
-            catch (IOException e) {
-              debug.write(Lvl.ERROR, this, "Error persisting journal: " + jf);
-              debug.writeException(Lvl.ERROR, e);
-              // If there is an error persisting the best thing to do is
-              // finish
-              synchronized (this) {
-                finished = true;
+          }
+          else if (to_process.size() > 0) {
+            // Something to process, so go ahead and process the journals,
+            int sz = to_process.size();
+            // For all journals
+            for (int i = 0; i < sz; ++i) {
+              // Pick the lowest journal to persist
+              JournalFile jf = (JournalFile) to_process.get(i);
+              try {
+                // Persist the journal
+                jf.persist(8, jf.size());
+                // Close and then delete the journal file
+                jf.closeAndDelete();
+              }
+              catch (IOException e) {
+                debug.write(Lvl.ERROR, this, "Error persisting journal: " + jf);
+                debug.writeException(Lvl.ERROR, e);
+                // If there is an error persisting the best thing to do is
+                // finish
+                synchronized (this) {
+                  finished = true;
+                }
               }
             }
           }
-        }
 
+          synchronized (this) {
+            local_finished = finished;
+            // Remove the journals that we have just persisted.
+            if (to_process != null) {
+              synchronized (top_journal_lock) {
+                int sz = to_process.size();
+                for (int i = 0; i < sz; ++i) {
+                  journal_archives.remove(0);
+                }
+              }
+            }
+            // Notify any threads waiting
+            notifyAll();
+          }
+
+        }
+      }
+      catch (InterruptedException e) {
+        // Exit the thread,
+      }
+      finally {
+        // Make sure this code is called,
         synchronized (this) {
-          local_finished = finished;
-          // Remove the journals that we have just persisted.
-          if (to_process != null) {
-            synchronized (top_journal_lock) {
-              int sz = to_process.size();
-              for (int i = 0; i < sz; ++i) {
-                journal_archives.remove(0);
-              }
-            }
-          }
-          // Notify any threads waiting
+          actually_finished = true;
           notifyAll();
         }
-
-      }
-
-      synchronized (this) {
-        actually_finished = true;
-        notifyAll();
       }
     }
     
@@ -1953,7 +1988,7 @@ class JournalledSystem {
         }
       }
       catch (InterruptedException e) {
-        throw new Error("Interrupted: " + e.getMessage());
+        throw new Error("Interrupted", e);
       }
     }
     
@@ -1972,7 +2007,9 @@ class JournalledSystem {
         try {
           wait();
         }
-        catch (InterruptedException e) { /* ignore */ }
+        catch (InterruptedException e) {
+          throw new Error("Interrupted", e);
+        }
 
         synchronized (top_journal_lock) {
           sz = journal_archives.size();

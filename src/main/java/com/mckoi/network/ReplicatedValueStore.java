@@ -25,26 +25,10 @@
 
 package com.mckoi.network;
 
-import com.mckoi.data.DataFile;
-import com.mckoi.data.FixedSizeSerialSet;
-import com.mckoi.data.Integer128Bit;
-import com.mckoi.data.Key;
-import com.mckoi.data.KeyObjectDatabase;
-import com.mckoi.data.KeyObjectTransaction;
-import com.mckoi.data.PropertySet;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import com.mckoi.data.*;
+import java.io.*;
 import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -194,6 +178,7 @@ public class ReplicatedValueStore {
 
     // Add listener for service status updates,
     tracker.addListener(new ServiceStatusListener() {
+      @Override
       public void statusChange(ServiceAddress address, String service_type,
                                String old_status, String new_status) {
         if (service_type.equals("manager")) {
@@ -357,14 +342,15 @@ public class ReplicatedValueStore {
       }
     }
     catch (InterruptedException e) {
-      log.log(Level.SEVERE, "InterruptedException");
+      log.log(Level.SEVERE, "InterruptedException", e);
+      throw new Error("Interrupted", e);
     }
   }
 
   /**
    * Clears the machine list.
    */
-  void clearAllMachines() {
+  final void clearAllMachines() {
     synchronized (cluster) {
       cluster.clear();
       cluster.add(this_service);
@@ -554,7 +540,7 @@ public class ReplicatedValueStore {
       }
 
       // Finished,
-      if (bundle.size() == 0 && done) {
+      if (bundle.isEmpty() && done) {
         break;
       }
 

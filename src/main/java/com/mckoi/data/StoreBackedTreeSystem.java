@@ -25,13 +25,8 @@
 
 package com.mckoi.data;
 
-import com.mckoi.store.Area;
-import com.mckoi.store.AreaInputStream;
-import com.mckoi.store.AreaWriter;
-import com.mckoi.store.MutableArea;
-import com.mckoi.store.Store;
+import com.mckoi.store.*;
 import com.mckoi.util.Cache;
-import com.mckoi.util.LongList;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -491,6 +486,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * Returns the max branch size.
    */
+  @Override
   public int getMaxBranchSize() {
     return max_branch_size;
   }
@@ -498,6 +494,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * Returns the maximum number of bytes in a leaf.
    */
+  @Override
   public int getMaxLeafByteSize() {
     return max_leaf_byte_size;
   }
@@ -653,7 +650,6 @@ public class StoreBackedTreeSystem implements TreeSystem {
       throw new RuntimeException(
                             "Unable to find version to unlock: " + version_id);
     }
-    return;
   }
 
   // ----- Critical stop error handling -----
@@ -662,6 +658,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * Checks if the database is in a stop state, if it is throws the stop state
    * exception.
    */
+  @Override
   public final void checkCriticalStop() {
     if (critical_stop_error != null) {
       // We wrap the critical stop error a second time to ensure the stack
@@ -676,6 +673,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * typically this is a stopping condition that stops all access to the
    * database immediately.
    */
+  @Override
   public final CriticalStopError handleIOException(IOException e) {
     critical_stop_error = new CriticalStopError(e.getMessage(), e);
     throw critical_stop_error;
@@ -686,6 +684,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * most typically an OutOfMemoryError.  A caught VirtualMachineError
    * causes the database to enter a critical stop state.
    */
+  @Override
   public final CriticalStopError handleVMError(VirtualMachineError e) {
     critical_stop_error = new CriticalStopError(e.getMessage(), e);
     throw critical_stop_error;
@@ -850,16 +849,19 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * It is intended for check points to happen immediately after a commit, but
    * it is not necessary and check points can be made at any time.
    */
+  @Override
   public void checkPoint() {
     checkCriticalStop();
     try {
       try {
         node_store.checkPoint();
       }
-      catch (InterruptedException e) { }  // Ignore interrupted exceptions
+      catch (InterruptedException e) {
+        throw new Error("Interrupted", e);
+      }
     }
     catch (IOException e) {
-      // An IOException during this block represents a critical stopping
+      // An IOException during this block represents a critical stop
       // condition.
       throw handleIOException(e);
     }
@@ -1069,6 +1071,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * Returns the maximum size of the local transaction node heaps.
    */
+  @Override
   public long getNodeHeapMaxSize() {
     return node_heap_max_size;
   }
@@ -1181,6 +1184,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * {@inheritDoc}
    */
+  @Override
   public TreeNode[] fetchNode(NodeReference[] node_refs) throws IOException {
     int sz = node_refs.length;
     TreeNode[] node_results = new TreeNode[sz];
@@ -1193,6 +1197,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public boolean isNodeAvailableLocally(NodeReference node_ref) {
     // Special node ref,
     if (node_ref.isSpecial()) {
@@ -1293,6 +1298,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * values that represent the address of every node written to the backing
    * media on the completion of the process.
    */
+  @Override
   public NodeReference[] performTreeWrite(
                                TreeWriteSequence sequence) throws IOException {
     try {
@@ -1402,6 +1408,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * Returns true if the link was successful, false if the link was not
    * possible because the reference counter overflowed.
    */
+  @Override
   public boolean linkLeaf(Key key, NodeReference ref) throws IOException {
     // If the node is a special node, then we don't need to reference count it.
     if (ref.isSpecial()) {
@@ -1507,6 +1514,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * Immediately disposes a node in the store.  Called when we are disposing
    * a transaction that wasn't committed.
    */
+  @Override
   public void disposeNode(NodeReference ref) throws IOException {
     try {
       node_store.lockForWrite();
@@ -1522,6 +1530,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * {@inhericDoc}
    */
+  @Override
   public boolean featureAccountForAllNodes() {
     // All nodes must be accounted for in this implementation,
     return true;
@@ -1860,12 +1869,22 @@ public class StoreBackedTreeSystem implements TreeSystem {
       }
     }
 
+    @Override
     public boolean equals(Object ob) {
       VersionInfo dest_v = (VersionInfo) ob;
       return (dest_v.version_id == version_id &&
               dest_v.root_node_pointer.equals(root_node_pointer));
     }
 
+    @Override
+    public int hashCode() {
+      int hash = 7;
+      hash = 61 * hash + (int) (this.version_id ^ (this.version_id >>> 32));
+      hash = 61 * hash + (this.root_node_pointer != null ? this.root_node_pointer.hashCode() : 0);
+      return hash;
+    }
+
+    @Override
     public String toString() {
       return "VersionInfo " + version_id + " rnp = " + root_node_pointer;
     }
@@ -1904,51 +1923,61 @@ public class StoreBackedTreeSystem implements TreeSystem {
 
     // ---------- Implemented from TreeLeaf ----------
 
+    @Override
     public NodeReference getReference() {
       return node_ref;
     }
 
+    @Override
     public int getSize() {
       return leaf_size;
     }
 
+    @Override
     public int getCapacity() {
       throw new RuntimeException(
                            "Area leaf does not have a meaningful capacity.");
     }
 
+    @Override
     public byte get(int position) throws IOException {
       area.position(position + 12);  // Make sure we position past the headers
       return area.get();
     }
 
+    @Override
     public void get(int position, byte[] buf, int off, int len)
                                                           throws IOException {
       area.position(position + 12);  // Make sure we position past the headers
       area.get(buf, off, len);
     }
 
+    @Override
     public void writeDataTo(AreaWriter writer) throws IOException {
       area.position(12);
       area.copyTo(writer, getSize());
     }
 
+    @Override
     public void shift(int position, int offset) throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
     }
 
+    @Override
     public void put(int position, byte[] buf, int off, int len)
                                                           throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
     }
 
+    @Override
     public void setSize(int size) throws IOException {
       throw new IOException(
                       "Write methods not available for immutable store leaf.");
     }
 
+    @Override
     public int getHeapSizeEstimate() {
       // Unsupported, we should never store this object on a heap since it's
       // not materialized.
