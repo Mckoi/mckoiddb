@@ -28,7 +28,7 @@ package com.mckoi.odb;
 import com.mckoi.data.*;
 import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.DataAddress;
-import com.mckoi.network.MckoiDDBClient;
+import com.mckoi.network.MckoiDDBAccess;
 import com.mckoi.util.ByteArrayUtil;
 import java.io.*;
 import java.security.NoSuchAlgorithmException;
@@ -836,7 +836,7 @@ class ODBTransactionImpl implements ODBTransaction {
     object_log.flush(base_root);
 
     // The database client,
-    MckoiDDBClient db_client = session.getDatabaseClient();
+    MckoiDDBAccess db_client = session.getDatabaseClient();
 
     // Flush the transaction to the network
     DataAddress proposal = db_client.flushTransaction(transaction);

@@ -25,25 +25,29 @@
 
 package com.mckoi.runtime;
 
-import com.mckoi.gui.DBContentViewPane;
-import com.mckoi.gui.ODBViewer;
+import com.mckoi.gui.*;
+import com.mckoi.network.MckoiDDBAccess;
 import com.mckoi.network.MckoiDDBClient;
 import com.mckoi.network.MckoiDDBClientUtils;
 import com.mckoi.network.ServiceAddress;
-import com.mckoi.gui.PathViewer;
-import com.mckoi.gui.SDBViewer;
-import com.mckoi.gui.ViewerFactory;
 import com.mckoi.odb.ODBSession;
 import com.mckoi.odb.ODBTransaction;
 import com.mckoi.sdb.SDBSession;
 import com.mckoi.sdb.SDBTransaction;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Container;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
-import javax.swing.*;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
+import javax.swing.UnsupportedLookAndFeelException;
 
 /**
  * A simple tool for browsing and viewing an SDB database.
@@ -92,7 +96,7 @@ public class DBViewer {
         catch (Throwable e) {
           JOptionPane.showMessageDialog(null,
                             "Unable to connect to network: " + e.getMessage());
-          e.printStackTrace();
+          e.printStackTrace(System.err);
           return;
         }
 
@@ -107,18 +111,21 @@ public class DBViewer {
         c.add(login_panel, BorderLayout.CENTER);
 
         login_frame.addWindowListener(new WindowAdapter() {
+          @Override
           public void windowClosing(WindowEvent evt) {
             login_frame.dispose();
             System.exit(0);
           }
         });
         login_panel.addExitActionListener(new ActionListener() {
+          @Override
           public void actionPerformed(ActionEvent evt) {
             login_frame.dispose();
             System.exit(0);
           }
         });
         login_panel.addConnectActionListener(new ActionListener() {
+          @Override
           public void actionPerformed(ActionEvent evt) {
             tryConnect(login_frame, login_panel);
           }
@@ -131,7 +138,7 @@ public class DBViewer {
 
     }
     catch (Throwable e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
     }
 
   }
@@ -162,7 +169,7 @@ public class DBViewer {
       catch (Throwable e) {
         JOptionPane.showMessageDialog(login_frame,
                            "Manager server address error: " + e.getMessage());
-        e.printStackTrace();
+        e.printStackTrace(System.err);
         return;
       }
 
@@ -177,7 +184,7 @@ public class DBViewer {
       catch (Throwable e) {
         JOptionPane.showMessageDialog(login_frame,
                            "Unable to connect to network: " + e.getMessage());
-        e.printStackTrace();
+        e.printStackTrace(System.err);
         return;
       }
 
@@ -201,12 +208,12 @@ public class DBViewer {
 
     }
     catch (Throwable e) {
-      e.printStackTrace();
+      e.printStackTrace(System.err);
     }
   }
 
 
-  private static void openViewerWindow(MckoiDDBClient client) {
+  private static void openViewerWindow(MckoiDDBAccess client) {
 
     // Fetch the list of paths accessible to the client,
     String[] path_array = client.queryAllNetworkPaths();
@@ -282,6 +289,7 @@ public class DBViewer {
     c.add(tables_pane, BorderLayout.CENTER);
 
     frame.addWindowListener(new WindowAdapter() {
+      @Override
       public void windowClosing(WindowEvent evt) {
         frame.dispose();
         System.exit(0);

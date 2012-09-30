@@ -45,7 +45,7 @@ import java.io.PrintWriter;
  * @author Tobias Downer
  */
 
-public class MckoiDDBClient {
+public class MckoiDDBClient implements MckoiDDBAccess {
 
   /**
    * The network connector object.
@@ -125,6 +125,7 @@ public class MckoiDDBClient {
    * is being written, node data will be flushed from the cache to the network
    * to make additional room.
    */
+  @Override
   public long getMaximumTransactionNodeCacheHeapSize() {
     return maximum_transaction_node_cache_heap_size;
   }
@@ -136,6 +137,7 @@ public class MckoiDDBClient {
    * is being written, node data will be flushed from the cache to the network
    * to make additional room.
    */
+  @Override
   public void setMaximumTransactionNodeCacheHeapSize(long size_in_bytes) {
     maximum_transaction_node_cache_heap_size = size_in_bytes;
     if (tree_system != null) {
@@ -207,6 +209,7 @@ public class MckoiDDBClient {
    * Returns a TreeReportNode object used for diagnostic/reporting the
    * meta-data of a transaction tree..
    */
+  @Override
   public TreeReportNode createDiagnosticGraph(KeyObjectTransaction t)
                                                            throws IOException {
     return tree_system.createDiagnosticGraph(t);
@@ -221,6 +224,7 @@ public class MckoiDDBClient {
    * paths that need to be preserved. The method may also be used for some
    * diagnostic procedures.
    */
+  @Override
   public void discoverNodesInSnapshot(PrintWriter warning_log,
                                       DataAddress root_node,
                                       DiscoveredNodeSet discovered_node_set) {
@@ -237,6 +241,7 @@ public class MckoiDDBClient {
    * Persists an empty database into the network and returns a DataAddress
    * object that references the root address of the empty database.
    */
+  @Override
   public DataAddress createEmptyDatabase() {
     try {
       return tree_system.createEmptyDatabase();
@@ -252,6 +257,7 @@ public class MckoiDDBClient {
    * query the network so the result should be cached by the user if frequent
    * use of this information is needed.
    */
+  @Override
   public String[] queryAllNetworkPaths() {
 
     checkPermission(MckoiNetworkPermission.QUERY_ALL_NETWORK_PATHS);
@@ -262,6 +268,7 @@ public class MckoiDDBClient {
   /**
    * Returns the name of the consensus function for the given database path.
    */
+  @Override
   public String getConsensusFunction(String path_name) {
     return tree_system.getConsensusFunction(path_name);
   }
@@ -271,6 +278,7 @@ public class MckoiDDBClient {
    * path instance in the network. If the path instance is not found on the
    * network, an exception is generated.
    */
+  @Override
   public DataAddress getCurrentSnapshot(String path_name) {
     return tree_system.getPathNow(path_name);
   }
@@ -280,6 +288,7 @@ public class MckoiDDBClient {
    * new transaction object that can be used to access and modify the data
    * stored there.
    */
+  @Override
   public KeyObjectTransaction createTransaction(DataAddress root_node) {
     // Create the transaction object and return it,
     return tree_system.createTransaction(root_node);
@@ -289,6 +298,7 @@ public class MckoiDDBClient {
    * Creates a new transaction object that contains an empty database, useful
    * for managing temporary structures that are never flushed.
    */
+  @Override
   public KeyObjectTransaction createEmptyTransaction() {
     // Create the transaction object and return it,
     return tree_system.createEmptyTransaction();
@@ -305,6 +315,7 @@ public class MckoiDDBClient {
    * around to other clients freely and they may modify the changes but their
    * modifications will not be visible to anyone else.
    */
+  @Override
   public DataAddress flushTransaction(KeyObjectTransaction transaction) {
     return tree_system.flushTransaction(transaction);
   }
@@ -319,6 +330,7 @@ public class MckoiDDBClient {
    * Throws CommitFaultException if the consensus processor rejected the
    * proposal.
    */
+  @Override
   public DataAddress performCommit(String path_name, DataAddress proposal)
                                                   throws CommitFaultException {
     return tree_system.performCommit(path_name, proposal);
@@ -330,6 +342,7 @@ public class MckoiDDBClient {
    * help reclaim resources associated with a transaction, but it is not
    * required to call this.
    */
+  @Override
   public void disposeTransaction(KeyObjectTransaction transaction) {
     try {
       tree_system.disposeTransaction(transaction);
@@ -355,6 +368,7 @@ public class MckoiDDBClient {
    * Therefore consider the nodes returned by this method to be a reasonable
    * approximation of all the snapshot states committed in the given time span.
    */
+  @Override
   public DataAddress[] getHistoricalSnapshots(String path_name,
                                              long time_start, long time_end) {
 

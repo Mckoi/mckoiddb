@@ -31,7 +31,7 @@ import com.mckoi.data.KeyObjectTransaction;
 import com.mckoi.data.StringData;
 import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.DataAddress;
-import com.mckoi.network.MckoiDDBClient;
+import com.mckoi.network.MckoiDDBAccess;
 import java.io.Reader;
 import java.util.*;
 
@@ -727,7 +727,7 @@ public class SDBTransaction {
         refreshTransactionLog();
 
         // The database client,
-        MckoiDDBClient db_client = session.getDatabaseClient();
+        MckoiDDBAccess db_client = session.getDatabaseClient();
 
         // Flush the transaction to the network
         DataAddress proposal = db_client.flushTransaction(transaction);
@@ -780,7 +780,7 @@ public class SDBTransaction {
     writeClearedTransactionLog();
 
     // The database client,
-    MckoiDDBClient db_client = session.getDatabaseClient();
+    MckoiDDBAccess db_client = session.getDatabaseClient();
     // Flush the transaction to the network
     DataAddress to_publish = db_client.flushTransaction(transaction);
 

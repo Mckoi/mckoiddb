@@ -29,6 +29,7 @@ import com.mckoi.data.DataFile;
 import com.mckoi.data.KeyObjectTransaction;
 import com.mckoi.data.PropertySet;
 import com.mckoi.network.DataAddress;
+import com.mckoi.network.MckoiDDBAccess;
 import com.mckoi.network.MckoiDDBClient;
 
 /**
@@ -46,7 +47,7 @@ public final class SDBSession {
    * The TCPMckoiDDBClient object used to handle the connection state
    * with the database.
    */
-  private final MckoiDDBClient db_client;
+  private final MckoiDDBAccess db_client;
 
   /**
    * The path name of the SDB data model in the network.
@@ -64,6 +65,15 @@ public final class SDBSession {
    * network.
    */
   public SDBSession(MckoiDDBClient client, String path_name) {
+    this((MckoiDDBAccess) client, path_name);
+  }
+
+  /**
+   * Constructs the SDBSession with the MckoiDDBAccess object (needed to talk
+   * with the network) and the path instance name of the database on the
+   * network.
+   */
+  public SDBSession(MckoiDDBAccess client, String path_name) {
     // Null checks
     if (client == null || path_name == null) throw new NullPointerException();
 
@@ -72,11 +82,11 @@ public final class SDBSession {
   }
 
   /**
-   * Returns the TCPMckoiDDBClient object used on this session.
+   * Returns the TCPMckoiDDBAccess object used on this session.
    * <p>
    * Security: Don't expose this outside the package scope!
    */
-  MckoiDDBClient getDatabaseClient() {
+  MckoiDDBAccess getDatabaseClient() {
     return db_client;
   }
 

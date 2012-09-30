@@ -29,20 +29,9 @@ import com.mckoi.data.DataFile;
 import com.mckoi.data.Key;
 import com.mckoi.data.KeyObjectTransaction;
 import com.mckoi.data.TreeSystemTransaction;
-import com.mckoi.network.CommitFaultException;
-import com.mckoi.network.DataAddress;
-import com.mckoi.network.MckoiDDBClient;
-import com.mckoi.network.MckoiDDBClientUtils;
+import com.mckoi.network.*;
 import com.mckoi.sdb.SDBTransaction;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Iterator;
 
 /**
@@ -63,7 +52,7 @@ public class PathDumpTool {
     String path_name = args[1];
 
     try {
-      MckoiDDBClient client =
+      MckoiDDBAccess client =
                       MckoiDDBClientUtils.connectTCP(new File("client.conf"));
 
       // Get the current transaction,
@@ -134,7 +123,7 @@ public class PathDumpTool {
     String dump_filename = args[1];
 
     try {
-      MckoiDDBClient client =
+      MckoiDDBAccess client =
                       MckoiDDBClientUtils.connectTCP(new File("client.conf"));
 
       if (!dump_filename.endsWith(".mdump")) {

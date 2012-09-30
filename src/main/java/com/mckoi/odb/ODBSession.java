@@ -29,6 +29,7 @@ import com.mckoi.data.DataFile;
 import com.mckoi.data.KeyObjectTransaction;
 import com.mckoi.data.PropertySet;
 import com.mckoi.network.DataAddress;
+import com.mckoi.network.MckoiDDBAccess;
 import com.mckoi.network.MckoiDDBClient;
 
 /**
@@ -43,10 +44,10 @@ import com.mckoi.network.MckoiDDBClient;
 public final class ODBSession {
 
   /**
-   * The MckoiDDBClient object used to handle the connection state
+   * The MckoiDDBAccess object used to handle the connection state
    * with the database.
    */
-  private final MckoiDDBClient db_client;
+  private final MckoiDDBAccess db_client;
 
   /**
    * The path name of the ODB data model in the network.
@@ -64,6 +65,15 @@ public final class ODBSession {
    * network.
    */
   public ODBSession(MckoiDDBClient client, String path_name) {
+    this((MckoiDDBAccess) client, path_name);
+  }
+
+  /**
+   * Constructs the ODBSession with the MckoiDDBAccess object (needed to talk
+   * with the network) and the path instance name of the database on the
+   * network.
+   */
+  public ODBSession(MckoiDDBAccess client, String path_name) {
     // Null checks
     if (client == null || path_name == null) throw new NullPointerException();
 
@@ -76,7 +86,7 @@ public final class ODBSession {
    * <p>
    * Security: Don't expose this outside the package scope!
    */
-  MckoiDDBClient getDatabaseClient() {
+  MckoiDDBAccess getDatabaseClient() {
     return db_client;
   }
 

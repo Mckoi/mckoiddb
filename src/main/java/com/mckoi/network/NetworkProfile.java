@@ -39,7 +39,7 @@ import java.util.*;
  * @author Tobias Downer
  */
 
-public class NetworkProfile {
+public class NetworkProfile implements NetworkAccess {
 
 //  /**
 //   * The network schema (the list of machines in the network).
@@ -119,6 +119,7 @@ public class NetworkProfile {
    * Queries the machine at the given ServiceAddress and returns true if the
    * machine is a valid Mckoi machine node.
    */
+  @Override
   public boolean isValidMckoiNode(ServiceAddress machine) {
     // Request a report from the administration role on the machine,
     MessageProcessor mp = network_connector.connectInstanceAdmin(machine);
@@ -145,7 +146,8 @@ public class NetworkProfile {
    * Returns a machine list of all nodes in the network sorted by the ip/port
    * address.
    */
-  public ArrayList<ServiceAddress> sortedServerList() {
+  @Override
+  public List<ServiceAddress> sortedServerList() {
 
     String node_list = network_config.getNetworkNodelist();
     if (node_list == null || node_list.length() == 0) {
@@ -199,7 +201,7 @@ public class NetworkProfile {
     }
 
     // The sorted list of all servers in the schema,
-    ArrayList<ServiceAddress> slist = sortedServerList();
+    List<ServiceAddress> slist = sortedServerList();
 
     // The list of machine profiles,
     ArrayList<MachineProfile> machines = new ArrayList();
@@ -262,6 +264,7 @@ public class NetworkProfile {
    * Refreshes this profile by inspecting the network and discovering any
    * changes to state.
    */
+  @Override
   public void refresh() {
     machine_profiles = null;
     inspectNetwork();
@@ -270,6 +273,7 @@ public class NetworkProfile {
   /**
    * Refresh the network configuration resource.
    */
+  @Override
   public void refreshNetworkConfig() throws IOException {
     network_config.load();
   }
@@ -278,6 +282,7 @@ public class NetworkProfile {
    * Returns true if the given ServiceAddress is a machine node that is part of
    * the network.
    */
+  @Override
   public boolean isMachineInNetwork(ServiceAddress machine_addr) {
     inspectNetwork();
 
@@ -294,6 +299,7 @@ public class NetworkProfile {
    * given ServiceAddress, or null if there is no machine in the schema with
    * the given address.
    */
+  @Override
   public MachineProfile getMachineProfile(ServiceAddress address) {
     inspectNetwork();
     for (MachineProfile p : machine_profiles) {
@@ -308,6 +314,7 @@ public class NetworkProfile {
    * Returns the current manager servers on the network, from the profile, or
    * null if there's current no manager assigned.
    */
+  @Override
   public MachineProfile[] getManagerServers() {
     inspectNetwork();
 
@@ -324,6 +331,7 @@ public class NetworkProfile {
    * Returns the set of all root servers in the network, from the profile,
    * or an empty array if no root servers discovered.
    */
+  @Override
   public MachineProfile[] getRootServers() {
     inspectNetwork();
 
@@ -341,6 +349,7 @@ public class NetworkProfile {
    * Returns the set of all block servers in the network, from the profile,
    * or an empty array if no block servers discovered.
    */
+  @Override
   public MachineProfile[] getBlockServers() {
     inspectNetwork();
 
@@ -357,6 +366,7 @@ public class NetworkProfile {
   /**
    * Returns a list of all machine profiles discovered on the network.
    */
+  @Override
   public MachineProfile[] getAllMachineProfiles() {
     inspectNetwork();
 
@@ -436,7 +446,12 @@ public class NetworkProfile {
     }
     // All managers failed,
     if (!success) {
-      throw new NetworkAdminException(last_error);
+      if (last_error != null) {
+        throw new NetworkAdminException(last_error);
+      }
+      else {
+        throw new NetworkAdminException("No manager servers available");
+      }
     }
 
   }
@@ -472,7 +487,12 @@ public class NetworkProfile {
     }
 
     // All managers failed,
-    throw new NetworkAdminException(last_error);
+    if (last_error != null) {
+      throw new NetworkAdminException(last_error);
+    }
+    else {
+      throw new NetworkAdminException("No manager servers available");
+    }
 
   }
 
@@ -628,6 +648,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void startManager(ServiceAddress machine)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -650,6 +671,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void stopManager(ServiceAddress machine)
                                                 throws NetworkAdminException {
 
@@ -673,6 +695,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void startRoot(ServiceAddress machine) throws NetworkAdminException {
     inspectNetwork();
     // Check machine is in the schema,
@@ -692,6 +715,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void stopRoot(ServiceAddress machine) throws NetworkAdminException {
 
     inspectNetwork();
@@ -712,6 +736,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void startBlock(ServiceAddress machine) throws NetworkAdminException {
     inspectNetwork();
     // Check machine is in the schema,
@@ -731,6 +756,7 @@ public class NetworkProfile {
    * Note that this does not update service registration of nodes in the
    * network.
    */
+  @Override
   public void stopBlock(ServiceAddress machine) throws NetworkAdminException {
 
     inspectNetwork();
@@ -748,6 +774,7 @@ public class NetworkProfile {
   /**
    * Registers a manager with the current managers assigned on the network.
    */
+  @Override
   public void registerManager(ServiceAddress manager)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -790,6 +817,7 @@ public class NetworkProfile {
   /**
    * Registers a manager with the current managers assigned on the network.
    */
+  @Override
   public void deregisterManager(ServiceAddress root)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -826,6 +854,7 @@ public class NetworkProfile {
    * Contacts a root server and registers it to the current manager server
    * assigned on the network.
    */
+  @Override
   public void registerRoot(ServiceAddress root) throws NetworkAdminException {
     inspectNetwork();
 
@@ -862,6 +891,7 @@ public class NetworkProfile {
    * Contacts a root server and deregisters it from the current manager server
    * assigned on the network.
    */
+  @Override
   public void deregisterRoot(ServiceAddress root)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -898,6 +928,7 @@ public class NetworkProfile {
    * Contacts the current manager server assigned on the network and registers
    * a block server to it.
    */
+  @Override
   public void registerBlock(ServiceAddress block)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -933,6 +964,7 @@ public class NetworkProfile {
    * Contacts the current manager server assigned on the network and
    * deregisters the given block server from it.
    */
+  @Override
   public void deregisterBlock(ServiceAddress block)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -1000,6 +1032,7 @@ public class NetworkProfile {
    * Returns the list of all path names from all root servers registered on the
    * network (ordered in no significant way).
    */
+  @Override
   public String[] getAllPathNames() throws NetworkAdminException {
     inspectNetwork();
 
@@ -1013,6 +1046,7 @@ public class NetworkProfile {
    * Returns the PathInfo for the given path name, or null if the path is not
    * defined.
    */
+  @Override
   public PathInfo getPathInfoForPath(String path_name)
                                                 throws NetworkAdminException {
     // Query the manager cluster for the PathInfo
@@ -1024,6 +1058,7 @@ public class NetworkProfile {
    * Adds a path/root server map to the network. This sends the path map to
    * the first available manager server.
    */
+  @Override
   public void addPathToNetwork(String path_name, String consensus_fun,
                   ServiceAddress root_leader, ServiceAddress[] root_servers)
                                                 throws NetworkAdminException {
@@ -1056,6 +1091,7 @@ public class NetworkProfile {
    * Removes a path/root server map from the network. This sends the path map
    * removal command from the first available manager server.
    */
+  @Override
   public void removePathFromNetwork(String path_name,
                     ServiceAddress root_server) throws NetworkAdminException {
     inspectNetwork();
@@ -1270,6 +1306,7 @@ public class NetworkProfile {
    * given time or not. The returned DataAddress objects will be snapshots
    * at roughly the time given.
    */
+  @Override
   public DataAddress[] getHistoricalPathRoots(ServiceAddress root,
                   PathInfo path_info,
                   long timestamp, int max_count) throws NetworkAdminException {
@@ -1306,6 +1343,7 @@ public class NetworkProfile {
    * the root server. Great care should be taken when using this function
    * because it bypasses all commit checks.
    */
+  @Override
   public void setPathRoot(ServiceAddress root, PathInfo path_info,
                           DataAddress address) throws NetworkAdminException {
 
@@ -1336,6 +1374,7 @@ public class NetworkProfile {
   /**
    * Returns the stats string for the given path name on the given root server.
    */
+  @Override
   public String getPathStats(PathInfo path_info)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -1368,6 +1407,7 @@ public class NetworkProfile {
   /**
    * Returns the GUID of a block server.
    */
+  @Override
   public long getBlockGUID(ServiceAddress block) throws NetworkAdminException {
     inspectNetwork();
 
@@ -1399,6 +1439,7 @@ public class NetworkProfile {
    * of all the block servers that contain the block. This is exactly the same
    * function used by the tree system for block lookup.
    */
+  @Override
   public ServiceAddress[] getBlockServerList(BlockId block_id)
                                                  throws NetworkAdminException {
 
@@ -1437,6 +1478,7 @@ public class NetworkProfile {
    * the nodes in the 'nodes_to_preserve' list. Any other nodes in the block
    * may safely be removed from the block file to free up system resources.
    */
+  @Override
   public long preserveNodesInBlock(ServiceAddress block_server,
                      BlockId block_id, List<NodeReference> nodes_to_preserve)
                                                  throws NetworkAdminException {
@@ -1533,6 +1575,7 @@ public class NetworkProfile {
    * associated with its status string. The status being a static from
    * DefaultManagerServer (eg. DefaultManagerServer.STATUS_UP).
    */
+  @Override
   public Map<ServiceAddress, String> getBlocksStatus()
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -1572,6 +1615,7 @@ public class NetworkProfile {
    * the manager server will return the given server as a container for the
    * given block_id.
    */
+  @Override
   public void addBlockAssociation(BlockId block_id, long server_guid)
                                                  throws NetworkAdminException {
     inspectNetwork();
@@ -1614,6 +1658,7 @@ public class NetworkProfile {
    * server will no longer return the given server as a container for the
    * given block_id.
    */
+  @Override
   public void removeBlockAssociation(BlockId block_id, long server_guid)
                                                  throws NetworkAdminException {
     inspectNetwork();
@@ -1654,6 +1699,7 @@ public class NetworkProfile {
    * Returns the list of all blocks stored on a block server, reported by the
    * block server.
    */
+  @Override
   public BlockId[] getBlockList(ServiceAddress block)
                                                 throws NetworkAdminException {
     inspectNetwork();
@@ -1684,6 +1730,7 @@ public class NetworkProfile {
    * Note that the stats object could be large (a days worth of analytics
    * at 1 min timeframe is about 64kb of data).
    */
+  @Override
   public long[] getAnalyticsStats(ServiceAddress server)
                                                 throws NetworkAdminException {
 
@@ -1703,6 +1750,7 @@ public class NetworkProfile {
    * Issues a command to the given block server to send the given block_id
    * to the destination block server.
    */
+  @Override
   public void processSendBlock(BlockId block_id,
                                ServiceAddress source_block_server,
                                ServiceAddress dest_block_server,
@@ -1743,6 +1791,7 @@ public class NetworkProfile {
   /**
    * Returns the debug string from the manager.
    */
+  @Override
   public String getManagerDebugString(ServiceAddress manager_server)
                                                 throws NetworkAdminException {
 

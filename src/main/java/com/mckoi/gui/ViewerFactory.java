@@ -25,7 +25,7 @@
 
 package com.mckoi.gui;
 
-import com.mckoi.network.MckoiDDBClient;
+import com.mckoi.network.MckoiDDBAccess;
 
 /**
  * A factory for producing PathViewer objects for data models.
@@ -38,6 +38,6 @@ public interface ViewerFactory {
   /**
    * Create a path viewer object for the data model.
    */
-  PathViewer createPathViewer(MckoiDDBClient client, String path_name);
+  PathViewer createPathViewer(MckoiDDBAccess client, String path_name);
 
 }

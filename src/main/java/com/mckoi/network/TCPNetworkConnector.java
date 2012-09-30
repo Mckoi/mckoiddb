@@ -363,8 +363,10 @@ class TCPNetworkConnector implements NetworkConnector {
       }
       catch (IOException e) {
 
+        // We log this as a warning. The failure is propogated back in an
+        // error message.
         if (try_count == 0) {
-          log.log(Level.SEVERE, "IOException processing a message", e);
+          log.log(Level.WARNING, "IOException processing a message", e);
         }
 
         // On an IOException we invalidate the connection forcing the
@@ -381,7 +383,7 @@ class TCPNetworkConnector implements NetworkConnector {
              e instanceof EOFException ||
              e instanceof SocketTimeoutException)) {
 
-          log.log(Level.SEVERE,
+          log.log(Level.WARNING,
                     "Retrying process after exception: {0}",
                     new Object[] { e.getClass().getName() });
 

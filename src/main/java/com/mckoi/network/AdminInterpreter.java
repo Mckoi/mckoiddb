@@ -64,7 +64,7 @@ public class AdminInterpreter {
   /**
    * A cached network profile object.
    */
-  private final NetworkProfile network_profile;
+  private final NetworkAccess network_profile;
 
   /**
    * Constructs the interpreter.
@@ -77,7 +77,7 @@ public class AdminInterpreter {
    *   false, all input commands are also output to 'out'
    */
   public AdminInterpreter(Reader in, Writer out,
-                          NetworkProfile network_profile,
+                          NetworkAccess network_profile,
                           boolean display_prompt) {
 
     this.display_prompt = display_prompt;
@@ -172,11 +172,10 @@ public class AdminInterpreter {
     }
   }
 
-
 //  /**
-//   * Returns the NetworkProfile for this administration process.
+//   * Returns the NetworkAccess for this administration process.
 //   */
-//  private NetworkProfile getNetworkProfile() {
+//  private NetworkAccess getNetworkAccess() {
 //    if (network_profile == null) {
 //      NetworkConnector connector = new TCPNetworkConnector(network_password);
 //      network_profile = new NetworkProfile(connector, network_password);
@@ -197,7 +196,7 @@ public class AdminInterpreter {
   /**
    * Displays an overview of the network.
    */
-  public void showNetwork() {
+  public static void showNetwork(PrintWriter out, NetworkAccess network) {
 
     int manager_count = 0;
     int root_count = 0;
@@ -206,9 +205,9 @@ public class AdminInterpreter {
     out.println(" MRB RC  BC  Server");
     out.println("------------------------------------");
     out.flush();
-    network_profile.refresh();
+    network.refresh();
 
-    MachineProfile[] profiles = network_profile.getAllMachineProfiles();
+    MachineProfile[] profiles = network.getAllMachineProfiles();
 
     for (MachineProfile p : profiles) {
       if (p.isError()) {
@@ -216,9 +215,9 @@ public class AdminInterpreter {
       }
       else {
         out.print(" ");
-        out.print(p.isManager() ? "M" : ".");;
-        out.print(p.isRoot() ? "R" : ".");;
-        out.print(p.isBlock() ? "B" : ".");;
+        out.print(p.isManager() ? "M" : ".");
+        out.print(p.isRoot() ? "R" : ".");
+        out.print(p.isBlock() ? "B" : ".");
         out.print("         ");
 
         manager_count += p.isManager() ? 1 : 0;
@@ -249,12 +248,13 @@ public class AdminInterpreter {
   /**
    * Displays node analytics.
    */
-  public void showAnalytics() throws NetworkAdminException {
+  public static void showAnalytics(PrintWriter out, NetworkAccess network)
+                                                 throws NetworkAdminException {
 
     out.flush();
-    network_profile.refresh();
+    network.refresh();
 
-    MachineProfile[] profiles = network_profile.getAllMachineProfiles();
+    MachineProfile[] profiles = network.getAllMachineProfiles();
 
     for (MachineProfile p : profiles) {
       out.println(p.getServiceAddress().displayString());
@@ -264,7 +264,7 @@ public class AdminInterpreter {
         out.println(p.getProblemMessage());
       }
       else {
-        long[] stats = network_profile.getAnalyticsStats(p.getServiceAddress());
+        long[] stats = network.getAnalyticsStats(p.getServiceAddress());
         if (stats.length < 4) {
           out.println("Sorry, no analytics available yet.");
         }
@@ -288,12 +288,13 @@ public class AdminInterpreter {
   /**
    * Shows debug information of the manager cluster.
    */
-  private void showManagerDebug() throws NetworkAdminException {
+  public static void showManagerDebug(PrintWriter out, NetworkAccess network)
+                                                 throws NetworkAdminException {
 
     out.flush();
-    network_profile.refresh();
+    network.refresh();
 
-    MachineProfile[] managers = network_profile.getManagerServers();
+    MachineProfile[] managers = network.getManagerServers();
 
     for (int i = 0; i < managers.length; ++i) {
       MachineProfile machine = managers[i];
@@ -301,7 +302,7 @@ public class AdminInterpreter {
       out.println(machine.getServiceAddress().displayString());
       out.println();
       if (!machine.isError()) {
-        String str = network_profile.getManagerDebugString(
+        String str = network.getManagerDebugString(
                                                  machine.getServiceAddress());
         out.println(str);
       }
@@ -314,7 +315,8 @@ public class AdminInterpreter {
   }
 
 
-  private void outputPathInfo(PathInfo p) throws NetworkAdminException {
+  private static void outputPathInfo(PrintWriter out, NetworkAccess network,
+                                     PathInfo p) throws NetworkAdminException {
 
     String path_name = p.getPathName();
 
@@ -338,7 +340,7 @@ public class AdminInterpreter {
 
     out.print(" Status: ");
     try {
-      String stats = network_profile.getPathStats(p);
+      String stats = network.getPathStats(p);
       if (stats != null) {
         out.print(stats);
       }
@@ -356,23 +358,24 @@ public class AdminInterpreter {
   /**
    * Displays the lists of paths defined on the system.
    */
-  public void showPaths() throws NetworkAdminException {
-    MachineProfile[] roots = network_profile.getRootServers();
+  public static void showPaths(PrintWriter out, NetworkAccess network)
+                                                 throws NetworkAdminException {
+    MachineProfile[] roots = network.getRootServers();
     if (roots.length == 0) {
       out.println("No root servers available on the network.");
       return;
     }
 
     out.flush();
-    network_profile.refresh();
+    network.refresh();
 
     // Get all paths from the manager cluster,
-    String[] path_names = network_profile.getAllPathNames();
+    String[] path_names = network.getAllPathNames();
 
     int count = 0;
     for (String path_name : path_names) {
-      PathInfo path_info = network_profile.getPathInfoForPath(path_name);
-      outputPathInfo(path_info);
+      PathInfo path_info = network.getPathInfoForPath(path_name);
+      outputPathInfo(out, network, path_info);
       out.flush();
       ++count;
     }
@@ -386,15 +389,16 @@ public class AdminInterpreter {
   /**
    * Displays an overview of the status of all servers.
    */
-  public void showStatus() throws NetworkAdminException {
+  public static void showStatus(PrintWriter out, NetworkAccess network)
+                                                 throws NetworkAdminException {
     out.println(" Status    Server");
     out.println("-----------------------------------------");
     out.flush();
-    network_profile.refresh();
+    network.refresh();
 
     Map<ServiceAddress, String> status_info = null;
     // Manager servers status,
-    MachineProfile[] managers = network_profile.getManagerServers();
+    MachineProfile[] managers = network.getManagerServers();
     if (managers.length > 0) {
       for (int i = 0; i < managers.length; ++i) {
         out.print(" ");
@@ -403,7 +407,7 @@ public class AdminInterpreter {
         out.println(managers[i].getServiceAddress().displayString());
 
         try {
-          status_info = network_profile.getBlocksStatus();
+          status_info = network.getBlocksStatus();
         }
         catch (NetworkAdminException e) {
           out.println("Error retrieving manager status info: " + e.getMessage());
@@ -415,7 +419,7 @@ public class AdminInterpreter {
     }
 
     // Status of root servers
-    MachineProfile[] roots = network_profile.getRootServers();
+    MachineProfile[] roots = network.getRootServers();
     if (roots.length == 0) {
       out.println("! Root servers not available");
     }
@@ -444,14 +448,14 @@ public class AdminInterpreter {
       }
     }
     else {
-      MachineProfile[] sblocks = network_profile.getBlockServers();
+      MachineProfile[] sblocks = network.getBlockServers();
       for (MachineProfile b : sblocks) {
         blocks.add(b.getServiceAddress());
       }
     }
     Collections.sort(blocks);
 
-    if (blocks.size() == 0) {
+    if (blocks.isEmpty()) {
       out.println("! Block servers not available");
     }
     for (ServiceAddress b : blocks) {
@@ -481,7 +485,7 @@ public class AdminInterpreter {
       }
       else {
         // Try and get status from machine profile
-        MachineProfile r = network_profile.getMachineProfile(b);
+        MachineProfile r = network.getMachineProfile(b);
         if (r.isError()) {
           out.print("DOWN      ");
         }
@@ -541,15 +545,16 @@ public class AdminInterpreter {
   /**
    * Check the status of block_servers stored on the block servers,
    */
-  private void blockMapProcess(BlockMapProcess process)
+  public static void blockMapProcess(PrintWriter out,
+          NetworkAccess network, BlockMapProcess process)
                                                 throws NetworkAdminException {
     out.println("Processing...");
     out.flush();
 
     // Refresh
-    network_profile.refresh();
+    network.refresh();
 
-    MachineProfile[] managers = network_profile.getManagerServers();
+    MachineProfile[] managers = network.getManagerServers();
     if (managers.length == 0) {
       out.println("Error: Manager currently not available.");
       throw new IntErrException();
@@ -557,7 +562,7 @@ public class AdminInterpreter {
 
     // Generate a map of server guid value to MachineProfile for that machine
     // node currently available.
-    MachineProfile[] block_servers = network_profile.getBlockServers();
+    MachineProfile[] block_servers = network.getBlockServers();
     long[] available_block_guids = new long[block_servers.length];
 
     HashMap<Long, MachineProfile> sguid_to_address = new HashMap();
@@ -565,7 +570,7 @@ public class AdminInterpreter {
     
     for (int i = 0; i < block_servers.length; ++i) {
       long server_guid =
-            network_profile.getBlockGUID(block_servers[i].getServiceAddress());
+            network.getBlockGUID(block_servers[i].getServiceAddress());
       available_block_guids[i] = server_guid;
       sguid_to_address.put(available_block_guids[i], block_servers[i]);
       address_to_sguid.put(
@@ -590,7 +595,7 @@ public class AdminInterpreter {
       MachineProfile block = sguid_to_address.get(server_guid);
       // Fetch the list of blocks for the server,
       BlockId[] block_ids =
-                       network_profile.getBlockList(block.getServiceAddress());
+                       network.getBlockList(block.getServiceAddress());
       for (BlockId block_id : block_ids) {
         // Build the association,
         ArrayList<Long> list = block_id_map.get(block_id);
@@ -610,7 +615,7 @@ public class AdminInterpreter {
     for (BlockId block_id : block_id_map.keySet()) {
 
       // The servers the manager server has on record for this block,
-      ServiceAddress[] query = network_profile.getBlockServerList(block_id);
+      ServiceAddress[] query = network.getBlockServerList(block_id);
       // Convert to SGUID list
       List<Long> servers_queried_for_block = new ArrayList();
       for (ServiceAddress saddr : query) {
@@ -674,8 +679,10 @@ public class AdminInterpreter {
   /**
    * Produces a summary of block_servers on the network.
    */
-  void checkBlockStatus() throws NetworkAdminException {
-    blockMapProcess(new BlockMapProcess() {
+  public static void checkBlockStatus(
+          final PrintWriter out, final NetworkAccess network)
+                                                 throws NetworkAdminException {
+    blockMapProcess(out, network, new BlockMapProcess() {
 
       @Override
       public void managerProcess(BlockId block_id,
@@ -743,10 +750,12 @@ public class AdminInterpreter {
    * Sends commands to block servers to attempt to fix block availability
    * issues.
    */
-  void fixBlockAvailability() throws NetworkAdminException {
+  public static void fixBlockAvailability(
+          final PrintWriter out, final NetworkAccess network)
+                                                 throws NetworkAdminException {
     final Random r = new Random();
 
-    blockMapProcess(new BlockMapProcess() {
+    blockMapProcess(out, network, new BlockMapProcess() {
 
       @Override
       public void managerProcess(BlockId block_id,
@@ -771,7 +780,7 @@ public class AdminInterpreter {
 
               out.println("Removing block association: " + block_id + " -> " +
                       sguid_to_address.get(sguid).getServiceAddress().displayString());
-              network_profile.removeBlockAssociation(block_id, sguid);
+              network.removeBlockAssociation(block_id, sguid);
 
             }
           }
@@ -782,7 +791,7 @@ public class AdminInterpreter {
 
               out.println("Adding block association: " + block_id + " -> " +
                       sguid_to_address.get(sguid).getServiceAddress().displayString());
-              network_profile.addBlockAssociation(block_id, sguid);
+              network.addBlockAssociation(block_id, sguid);
             }
           }
         }
@@ -842,10 +851,10 @@ public class AdminInterpreter {
             out.println(".");
 
             // Send the command to copy,
-            network_profile.processSendBlock(block_id,
-                                          source_server.getServiceAddress(),
-                                          dest_server.getServiceAddress(),
-                                          dest_server_sguid);
+            network.processSendBlock(block_id,
+                                     source_server.getServiceAddress(),
+                                     dest_server.getServiceAddress(),
+                                     dest_server_sguid);
           }
 
           out.println("block " + block_id + " can be copied to: " +
@@ -933,11 +942,11 @@ public class AdminInterpreter {
   /**
    * Shows usage of storage resources on the machine node (memory and disk).
    */
-  public void showFree() {
+  public static void showFree(PrintWriter out, NetworkAccess network) {
     // Refresh
-    network_profile.refresh();
+    network.refresh();
 
-    MachineProfile[] machines = network_profile.getAllMachineProfiles();
+    MachineProfile[] machines = network.getAllMachineProfiles();
     if (machines.length == 0) {
       out.println("No machines in the network.");
     }
@@ -1476,24 +1485,24 @@ public class AdminInterpreter {
       }
       else if (match(lccmd, "show\\s+network") ||
                match(lccmd, "show\\s+schema")) {
-        showNetwork();
+        showNetwork(out, network_profile);
       }
       else if (match(lccmd, "show\\s+paths")) {
-        showPaths();
+        showPaths(out, network_profile);
       }
       else if (match(lccmd, "show\\s+status")) {
         // Overview of current status of network
-        showStatus();
+        showStatus(out, network_profile);
       }
       else if (match(lccmd, "show\\s+free")) {
-        showFree();
+        showFree(out, network_profile);
       }
       else if (match(lccmd, "show\\s+analytics")) {
-        showAnalytics();
+        showAnalytics(out, network_profile);
       }
 
       else if (match(lccmd, "show\\s+manager\\s+debug")) {
-        showManagerDebug();
+        showManagerDebug(out, network_profile);
       }
 
       // path rollback operations,
@@ -1535,12 +1544,11 @@ public class AdminInterpreter {
       }
 
       else if (match(lccmd, "fix\\s+block\\s+availability")) {
-        fixBlockAvailability();
+        fixBlockAvailability(out, network_profile);
       }
       else if (match(lccmd, "check\\s+network")) {
         // Check network for incorrect registrations, and fix them.
-        checkBlockStatus();
-//        out.println("Function pending.");
+        checkBlockStatus(out, network_profile);
       }
       else if (match(lccmd, "move\\s+manager\\s+(to\\s+)?(\\S+)")) {
         // PENDING: Moves the network manager role to another machine.
@@ -1627,7 +1635,7 @@ public class AdminInterpreter {
     }
   }
 
-  interface BlockMapProcess {
+  public static interface BlockMapProcess {
 
     void managerProcess(BlockId block_id,
                         List<Long> manager_queried_servers,

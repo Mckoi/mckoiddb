@@ -207,6 +207,8 @@ public interface ODBList extends Iterable<ODBObject> {
    * Returns a reference to the first entry in the list that contains the
    * given key value. This only works if the order specification is on the
    * key of stored objects.
+   * <p>
+   * Returns null if the key value is not present in the list.
    */
   Reference get(String key_value);
 
@@ -214,6 +216,8 @@ public interface ODBList extends Iterable<ODBObject> {
    * Returns the first entry in the list that contains the given key value.
    * This only works if the order specification is on the key of stored
    * objects.
+   * <p>
+   * Returns null if the key value is not present in the list.
    */
   ODBObject getObject(String key_value);
 
