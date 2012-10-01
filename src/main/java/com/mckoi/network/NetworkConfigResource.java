@@ -31,6 +31,9 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.security.AccessController;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -71,7 +74,7 @@ public abstract class NetworkConfigResource {
   /**
    * The logger.
    */
-  private final Logger log;
+  private static final Logger log = Logger.getLogger("com.mckoi.network.Log");
 
   /**
    * The modification time of the configuration resource the last time it
@@ -119,7 +122,6 @@ public abstract class NetworkConfigResource {
                         MckoiNetworkPermission.CREATE_NETWORK_CONFIG_RESOURCE);
     }
 
-    this.log = Logger.getLogger("com.mckoi.network.Log");
   }
 
   /**
@@ -341,19 +343,36 @@ public abstract class NetworkConfigResource {
 
     @Override
     protected void loadResource() throws IOException {
-      URLConnection c = url.openConnection();
-      c.connect();
-      // Get the last modified time,
-      last_modified = c.getLastModified();
-      if (last_modified == 0) {
-        last_modified = -1;
+
+      // The load is a privileged action,
+      try {
+        AccessController.doPrivileged(new PrivilegedExceptionAction() {
+          @Override
+          public Object run() throws IOException {
+
+            URLConnection c = url.openConnection();
+            c.connect();
+            // Get the last modified time,
+            last_modified = c.getLastModified();
+            if (last_modified == 0) {
+              last_modified = -1;
+            }
+            // Load the file into a Properties object,
+            InputStream in = c.getInputStream();
+            Properties p = new Properties();
+            p.load(in);
+            in.close();
+            properties = p;
+
+            return null;
+          }
+        });
       }
-      // Load the file into a Properties object,
-      InputStream in = c.getInputStream();
-      Properties p = new Properties();
-      p.load(in);
-      in.close();
-      properties = p;
+      // Rethrow as IOException
+      catch (PrivilegedActionException e) {
+        throw (IOException) e.getCause();
+      }
+      
     }
 
     @Override
@@ -384,22 +403,53 @@ public abstract class NetworkConfigResource {
 
     @Override
     protected long getLastModifiedTime() throws IOException {
-      long v = file.lastModified();
-      if (v == 0) {
-        return -1;
+
+      // Reading the last modified time on a file is a privileged action,
+      try {
+        return (Long) AccessController.doPrivileged(
+                                              new PrivilegedExceptionAction() {
+          @Override
+          public Object run() throws IOException {
+            long v = file.lastModified();
+            if (v == 0) {
+              return -1;
+            }
+            else {
+              return v;
+            }
+          }
+        });
       }
-      else {
-        return v;
+      // Rethrow as IOException
+      catch (PrivilegedActionException e) {
+        throw (IOException) e.getCause();
       }
+
     }
 
     @Override
     protected Properties refreshNodeProperties() throws IOException {
-      InputStream fin = new BufferedInputStream(new FileInputStream(file));
-      Properties p = new Properties();
-      p.load(fin);
-      fin.close();
-      return p;
+
+      // Reading the file is a privileged action.
+      try {
+        return (Properties) AccessController.doPrivileged(
+                                              new PrivilegedExceptionAction() {
+          @Override
+          public Object run() throws IOException {
+            InputStream fin =
+                            new BufferedInputStream(new FileInputStream(file));
+            Properties p = new Properties();
+            p.load(fin);
+            fin.close();
+            return p;
+          }
+        });
+      }
+      // Rethrow as IOException
+      catch (PrivilegedActionException e) {
+        throw (IOException) e.getCause();
+      }
+
     }
 
   }

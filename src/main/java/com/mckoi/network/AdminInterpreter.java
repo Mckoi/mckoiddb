@@ -26,6 +26,8 @@
 package com.mckoi.network;
 
 import com.mckoi.util.AnalyticsHistory;
+import com.mckoi.util.IOWrapStyledPrintWriter;
+import com.mckoi.util.StyledPrintWriter;
 import java.io.*;
 import java.math.BigDecimal;
 import java.text.DateFormat;
@@ -59,7 +61,7 @@ public class AdminInterpreter {
   /**
    * The output writer.
    */
-  private final PrintWriter out;
+  private final StyledPrintWriter out;
 
   /**
    * A cached network profile object.
@@ -83,7 +85,7 @@ public class AdminInterpreter {
     this.display_prompt = display_prompt;
     this.network_profile = network_profile;
     this.in = new BufferedReader(in);
-    this.out = new PrintWriter(out);
+    this.out = new IOWrapStyledPrintWriter(out);
   }
 
 
@@ -188,7 +190,7 @@ public class AdminInterpreter {
    *
    * @deprecated use AnalyticsHistory instead.
    */
-  public static void printStatItem(PrintWriter out, long[] stats, int item_count) {
+  public static void printStatItem(StyledPrintWriter out, long[] stats, int item_count) {
     AnalyticsHistory.printStatItem(out, stats, item_count);
   }
 
@@ -196,7 +198,7 @@ public class AdminInterpreter {
   /**
    * Displays an overview of the network.
    */
-  public static void showNetwork(PrintWriter out, NetworkAccess network) {
+  public static void showNetwork(StyledPrintWriter out, NetworkAccess network) {
 
     int manager_count = 0;
     int root_count = 0;
@@ -248,7 +250,7 @@ public class AdminInterpreter {
   /**
    * Displays node analytics.
    */
-  public static void showAnalytics(PrintWriter out, NetworkAccess network)
+  public static void showAnalytics(StyledPrintWriter out, NetworkAccess network)
                                                  throws NetworkAdminException {
 
     out.flush();
@@ -288,7 +290,7 @@ public class AdminInterpreter {
   /**
    * Shows debug information of the manager cluster.
    */
-  public static void showManagerDebug(PrintWriter out, NetworkAccess network)
+  public static void showManagerDebug(StyledPrintWriter out, NetworkAccess network)
                                                  throws NetworkAdminException {
 
     out.flush();
@@ -315,7 +317,7 @@ public class AdminInterpreter {
   }
 
 
-  private static void outputPathInfo(PrintWriter out, NetworkAccess network,
+  private static void outputPathInfo(StyledPrintWriter out, NetworkAccess network,
                                      PathInfo p) throws NetworkAdminException {
 
     String path_name = p.getPathName();
@@ -358,7 +360,7 @@ public class AdminInterpreter {
   /**
    * Displays the lists of paths defined on the system.
    */
-  public static void showPaths(PrintWriter out, NetworkAccess network)
+  public static void showPaths(StyledPrintWriter out, NetworkAccess network)
                                                  throws NetworkAdminException {
     MachineProfile[] roots = network.getRootServers();
     if (roots.length == 0) {
@@ -389,7 +391,7 @@ public class AdminInterpreter {
   /**
    * Displays an overview of the status of all servers.
    */
-  public static void showStatus(PrintWriter out, NetworkAccess network)
+  public static void showStatus(StyledPrintWriter out, NetworkAccess network)
                                                  throws NetworkAdminException {
     out.println(" Status    Server");
     out.println("-----------------------------------------");
@@ -545,7 +547,7 @@ public class AdminInterpreter {
   /**
    * Check the status of block_servers stored on the block servers,
    */
-  public static void blockMapProcess(PrintWriter out,
+  public static void blockMapProcess(StyledPrintWriter out,
           NetworkAccess network, BlockMapProcess process)
                                                 throws NetworkAdminException {
     out.println("Processing...");
@@ -680,7 +682,7 @@ public class AdminInterpreter {
    * Produces a summary of block_servers on the network.
    */
   public static void checkBlockStatus(
-          final PrintWriter out, final NetworkAccess network)
+          final StyledPrintWriter out, final NetworkAccess network)
                                                  throws NetworkAdminException {
     blockMapProcess(out, network, new BlockMapProcess() {
 
@@ -751,7 +753,7 @@ public class AdminInterpreter {
    * issues.
    */
   public static void fixBlockAvailability(
-          final PrintWriter out, final NetworkAccess network)
+          final StyledPrintWriter out, final NetworkAccess network)
                                                  throws NetworkAdminException {
     final Random r = new Random();
 
@@ -942,7 +944,7 @@ public class AdminInterpreter {
   /**
    * Shows usage of storage resources on the machine node (memory and disk).
    */
-  public static void showFree(PrintWriter out, NetworkAccess network) {
+  public static void showFree(StyledPrintWriter out, NetworkAccess network) {
     // Refresh
     network.refresh();
 
@@ -1526,7 +1528,7 @@ public class AdminInterpreter {
         }
         catch (IOException e) {
           out.println("Unable to refresh network config due to IO error");
-          e.printStackTrace(out);
+          out.printException(e);
         }
         out.println("Done.");
       }

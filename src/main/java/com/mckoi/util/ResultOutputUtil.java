@@ -25,12 +25,15 @@
 
 package com.mckoi.util;
 
-import java.sql.*;
-import java.io.*;
-import java.util.Vector;
+import java.io.PrintWriter;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Utilities for parsing a ResultSet and outputing it in different forms.  The
+ * Utilities for parsing a ResultSet and outputting it in different forms. The
  * forms included are straight text (mono-spaced), HTML, etc.
  *
  * @author Tobias Downer
@@ -84,9 +87,9 @@ public class ResultOutputUtil {
     ResultSetMetaData meta_data = result_set.getMetaData();
     // Maximum widths of each column.
     int[] max_widths = new int[meta_data.getColumnCount()];
-    Vector[] data = new Vector[meta_data.getColumnCount()];
+    List<String>[] data = new List[meta_data.getColumnCount()];
     for (int i = 0; i < data.length; ++i) {
-      data[i] = new Vector();
+      data[i] = new ArrayList();
     }
     int row_count = 0;
 
@@ -103,7 +106,7 @@ public class ResultOutputUtil {
         if (ob != null) {
           str = ob.toString();
         }
-        data[i].addElement(str);
+        data[i].add(str);
         max_widths[i] = Math.max(str.length(), max_widths[i]);
       }
       ++row_count;
@@ -120,7 +123,7 @@ public class ResultOutputUtil {
     writeBreak(max_widths, out);
     for (int i = 0; i < row_count; ++i) {
       for (int n = 0; n < line.length; ++n) {
-        line[n] = (String) data[n].elementAt(i);
+        line[n] = (String) data[n].get(i);
       }
       writeRow(max_widths, line, out);
     }

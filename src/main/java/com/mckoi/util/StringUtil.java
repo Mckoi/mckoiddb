@@ -26,9 +26,8 @@
 package com.mckoi.util;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Iterator;
-import java.io.*;
+import java.util.List;
 
 /**
  * Various String utilities.

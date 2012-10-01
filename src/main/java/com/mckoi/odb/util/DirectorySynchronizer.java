@@ -27,6 +27,7 @@ package com.mckoi.odb.util;
 
 import com.mckoi.data.DataFile;
 import com.mckoi.data.DataFileUtils;
+import com.mckoi.util.StyledPrintWriter;
 import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +53,7 @@ public class DirectorySynchronizer {
   /**
    * The stream to output information to.
    */
-  private final PrintWriter out;
+  private final StyledPrintWriter out;
   
   /**
    * The source repository.
@@ -65,7 +66,7 @@ public class DirectorySynchronizer {
   private final SynchronizerRepository dest_rep;
 
 
-  public DirectorySynchronizer(PrintWriter out,
+  public DirectorySynchronizer(StyledPrintWriter out,
                                SynchronizerRepository source,
                                SynchronizerRepository dest) {
     this.out = out;
@@ -117,7 +118,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getJavaToMckoiSynchronizer(
-                       PrintWriter out, File local_path,
+                       StyledPrintWriter out, File local_path,
                        FileSystem mckoi_file_sys, String mckoi_path) {
 
     return new DirectorySynchronizer(out,
@@ -134,7 +135,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getMckoiToJavaSynchronizer(
-                       PrintWriter out,
+                       StyledPrintWriter out,
                        FileSystem mckoi_file_sys, String mckoi_path,
                        File local_path) {
 
@@ -151,7 +152,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getMckoiToMckoiSynchronizer(
-                       PrintWriter out,
+                       StyledPrintWriter out,
                        FileSystem mckoi_src_filesys, String mckoi_src_path,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path) {
 
@@ -168,7 +169,7 @@ public class DirectorySynchronizer {
    * changes were made to the destination repository.
    */
   public static DirectorySynchronizer getZipToMckoiSynchronizer(
-                       PrintWriter out, File zip_file,
+                       StyledPrintWriter out, File zip_file,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path)
                                                            throws IOException {
 

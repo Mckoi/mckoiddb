@@ -164,7 +164,8 @@ public class AnalyticsHistory {
    * to report on, for example 'item_count == 1' will write the stats for the
    * earliest timescale.
    */
-  public static void printStatItem(PrintWriter out, long[] stats, int item_count) {
+  public static void printStatItem(StyledPrintWriter out,
+                                   long[] stats, int item_count) {
     long op_count = 0;
     long op_time = 0;
     int c = 0;

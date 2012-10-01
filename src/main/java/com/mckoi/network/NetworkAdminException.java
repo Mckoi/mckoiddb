@@ -25,6 +25,7 @@
 
 package com.mckoi.network;
 
+import com.mckoi.util.StyledPrintWriter;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 
@@ -73,6 +74,17 @@ public class NetworkAdminException extends Exception {
    */
   public void printAdminError(PrintWriter out) {
     printStackTrace(out);
+    if (external_throwable != null) {
+      out.println("Caused from server exception;");
+      out.println(external_throwable.getStackTrace());
+    }
+  }
+
+  /**
+   * Prints the error string + stack trace to the print stream.
+   */
+  public void printAdminError(StyledPrintWriter out) {
+    out.printException(this);
     if (external_throwable != null) {
       out.println("Caused from server exception;");
       out.println(external_throwable.getStackTrace());

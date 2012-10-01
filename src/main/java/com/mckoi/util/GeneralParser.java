@@ -25,9 +25,9 @@
 
 package com.mckoi.util;
 
+import java.math.BigDecimal;
 import java.text.CharacterIterator;
 import java.text.ParseException;
-import java.math.BigDecimal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -132,7 +132,7 @@ public class GeneralParser {
   }
 
   /**
-   * Parses a time grammer waiting on the character iterator.  The grammer is
+   * Parses a time grammar waiting on the character iterator.  The grammar is
    * quite simple.  It allows for us to specify quite precisely some unit of
    * time measure and convert it to a Java understandable form.  It returns the
    * number of milliseconds that the unit of time represents.
@@ -142,23 +142,22 @@ public class GeneralParser {
    * To construct a valid time measure, you must supply a sequence of time
    * measurements.  The valid time measurements are 'week(s)', 'day(s)',
    * 'hour(s)', 'minute(s)', 'second(s)', 'millisecond(s)'.  To construct a
-   * time, we simply concatinate the measurements together.  For example,
+   * time, we simply concatenate the measurements together.  For example,
    *   '3 days 22 hours 9.5 minutes'
    * <p>
    * It accepts any number of time measurements, but not duplicates of the
    * same.
    * <p>
    * The time measures are case insensitive.  It is a little lazy how it reads
-   * the grammer.  We could for example enter '1 hours 40 second' or even
-   * more extreme, '1 houraboutit 90 secondilianit' both of which are
-   * acceptable!
+   * the grammar.  We could for example enter '1 hours 40 second' or even,
+   * '1 houraboutit 90 secondilianit' both of which are valid.
    * <p>
    * This method will keep on parsing the string until the end of the iterator
    * is reached or a non-numeric time measure is found.  It throws a
    * ParseException if an invalid time measure is found or a number is invalid
    * (eg. -3 days).
    * <p>
-   * LOCALE ISSUE: This will likely be a difficult method to localise.
+   * LOCALE ISSUE: This will likely be a difficult method to localize.
    */
   public static BigDecimal parseTimeMeasure(CharacterIterator i)
                                                         throws ParseException {
