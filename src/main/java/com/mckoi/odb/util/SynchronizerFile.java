@@ -53,6 +53,11 @@ public interface SynchronizerFile {
   long getTimestamp();
 
   /**
+   * Sets the timestamp of this file (eg. 'touch').
+   */
+  void setTimestamp(long timestamp) throws IOException;
+
+  /**
    * The SHA-256 hash of the content of the complete file.
    */
   byte[] getSHAHash() throws IOException;

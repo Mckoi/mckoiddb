@@ -441,6 +441,10 @@ public class DirectorySynchronizer {
         }
         outs.write(buf, 0, read);
       }
+
+      // Touch the copy,
+      dest_file_ob.setTimestamp(file_ob.getTimestamp());
+
     }
 
     @Override
@@ -497,6 +501,12 @@ public class DirectorySynchronizer {
     public long getTimestamp() {
       checkExists();
       return file.lastModified();
+    }
+
+    @Override
+    public void setTimestamp(long timestamp) throws IOException {
+      checkExists();
+      file.setLastModified(timestamp);
     }
 
     @Override
@@ -632,6 +642,9 @@ public class DirectorySynchronizer {
         }
       }
 
+      // Touch the file,
+      dest_file_ob.setTimestamp(file_ob.getTimestamp());
+
     }
 
     @Override
@@ -684,6 +697,11 @@ public class DirectorySynchronizer {
     @Override
     public long getTimestamp() {
       return file_info.getLastModified();
+    }
+
+    @Override
+    public void setTimestamp(long timestamp) {
+      file_info.setLastModified(timestamp);
     }
 
     @Override
@@ -910,6 +928,12 @@ public class DirectorySynchronizer {
     @Override
     public long getTimestamp() {
       return zip_entry.getTime();
+    }
+
+    @Override
+    public void setTimestamp(long timestamp) {
+      // Zip files are read-only.
+      throw new UnsupportedOperationException();
     }
 
     @Override
