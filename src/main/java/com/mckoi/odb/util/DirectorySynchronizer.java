@@ -51,6 +51,12 @@ public class DirectorySynchronizer {
   private Set<String> skip_directories = null;
 
   /**
+   * True if the synchronize method should delete files that don't exist in
+   * the originating copy (default is true).
+   */
+  private boolean delete_files = true;
+
+  /**
    * The stream to output information to.
    */
   private final StyledPrintWriter out;
@@ -82,6 +88,15 @@ public class DirectorySynchronizer {
       skip_directories = new HashSet();
     }
     skip_directories.add(path);
+  }
+
+  /**
+   * Sets the 'delete_files' flag which causes the 'synchronize' method
+   * to delete files and directories. By default, this is set to true so set
+   * to false if you don't want anything deleted.
+   */
+  public void setDeleteFilesFlag(boolean status) {
+    delete_files = status;
   }
 
   /**
@@ -320,37 +335,40 @@ public class DirectorySynchronizer {
       }
     }
 
-    // Sort the touched files list,
-    Collections.sort(touched_files);
-    Collections.sort(touched_dirs);
-    
-    // Any files in the destination that aren't touched we delete,
-    List<SynchronizerFile> dest_files = dest_rep.allFiles(sync_dir);
-    for (SynchronizerFile dest_file : dest_files) {
-      String item_name = dest_file.getName();
-      int pos = Collections.binarySearch(touched_files, item_name);
-      if (pos < 0) {
-        String file_abs_name = sync_dir + item_name;
-        // Not in the list, so delete this,
-        if (out != null) {
-          out.println("DELETE; " + file_abs_name);
+    // Do we delete files that aren't in the source?
+    if (delete_files) {
+      // Sort the touched files list,
+      Collections.sort(touched_files);
+      Collections.sort(touched_dirs);
+
+      // Any files in the destination that aren't touched we delete,
+      List<SynchronizerFile> dest_files = dest_rep.allFiles(sync_dir);
+      for (SynchronizerFile dest_file : dest_files) {
+        String item_name = dest_file.getName();
+        int pos = Collections.binarySearch(touched_files, item_name);
+        if (pos < 0) {
+          String file_abs_name = sync_dir + item_name;
+          // Not in the list, so delete this,
+          if (out != null) {
+            out.println("DELETE; " + file_abs_name);
+          }
+          dest_file.delete();
+          ++running_update_count;
         }
-        dest_file.delete();
-        ++running_update_count;
       }
-    }
-    // Any directories in the destination that we didn't touch we delete,
-    List<String> dest_dirs = dest_rep.allSubDirectories(sync_dir);
-    for (String dir : dest_dirs) {
-      int pos = Collections.binarySearch(touched_dirs, dir);
-      if (pos < 0) {
-        String dir_abs_name = sync_dir + dir;
-        // Not in the list, so recursively delete this,
-        if (out != null) {
-          out.println("REMOVE DIRECTORY; " + dir_abs_name);
+      // Any directories in the destination that we didn't touch we delete,
+      List<String> dest_dirs = dest_rep.allSubDirectories(sync_dir);
+      for (String dir : dest_dirs) {
+        int pos = Collections.binarySearch(touched_dirs, dir);
+        if (pos < 0) {
+          String dir_abs_name = sync_dir + dir;
+          // Not in the list, so recursively delete this,
+          if (out != null) {
+            out.println("REMOVE DIRECTORY; " + dir_abs_name);
+          }
+          dest_rep.removeDirectory(dir_abs_name);
+          ++running_update_count;
         }
-        dest_rep.removeDirectory(dir_abs_name);
-        ++running_update_count;
       }
     }
     

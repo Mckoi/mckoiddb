@@ -1572,7 +1572,7 @@ public class FileSystemImpl implements FileSystem {
     @Override
     public String getPathName() {
       int p = name.lastIndexOf("/");
-      return name.substring(0, p);
+      return name.substring(0, p + 1);
     }
 
 
