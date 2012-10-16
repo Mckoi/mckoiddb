@@ -31,6 +31,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An ordered set of variable length data strings mapped over a single
@@ -101,6 +102,10 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   }
 
 
+//  private static final AtomicLong hit_count = new AtomicLong(0);
+//  private static final AtomicLong total_count = new AtomicLong(0);
+
+
   // ----- Members -----
 
   /**
@@ -109,9 +114,9 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   private final DataFile data;
 
   /**
-   * The Comparator under which the strings in the set are sorted.
+   * The Comparator under which the byte arrays in the set are sorted.
    */
-  private final Comparator<ByteArray> string_collator;
+  private final Comparator<ByteArray> array_comparator;
 
   /**
    * The position of the first element in the list.
@@ -162,6 +167,12 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    */
   private final ByteArray upper_bound;
 
+  /**
+   * Used as a simple cache.
+   */
+  private ArrayList<DataSectionByteArray> section_cache;
+  private boolean use_sections_cache = false;
+  
 
   // ------ Temporary members set in the search method -----
 
@@ -183,7 +194,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     }
 
     this.data = data;
-    this.string_collator = (collator != null) ? collator : LEXI_COLLATOR;
+    this.array_comparator = (collator != null) ? collator : LEXI_COLLATOR;
     // This constructor has unlimited bounds.
     this.upper_bound = u_bound;
     this.lower_bound = l_bound;
@@ -196,7 +207,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   private OrderedSetData(OrderedSetData root_set,
                          ByteArray l_bound, ByteArray u_bound) {
 
-    this(root_set.data, root_set.string_collator,
+    this(root_set.data, root_set.array_comparator,
          l_bound, u_bound);
 
     // Set the root set
@@ -204,6 +215,8 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // Set the version to -1 (will auto update internal state when the list is
     // accessed).
     this.version = -1;
+
+    this.use_sections_cache = root_set.use_sections_cache;
 
   }
 
@@ -234,6 +247,17 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   }
 
   /**
+   * If called, this ordered set will hold a small sections cache that is
+   * useful if this is a long-lived ordered set data object. The sections
+   * cache holds back information obtained from the top few stack frames.
+   * This can result in a good performance improvement if this ordered set
+   * data contains complex data structures.
+   */
+  public void useSectionsCache(boolean status) {
+    use_sections_cache = status;
+  }
+
+  /**
    * Creates this structure mapped over the given DataFile object. The order of
    * strings in this string set is lexicographical.
    *
@@ -256,6 +280,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 //    System.out.println("this.root_state_dirty = " + this.root_state_dirty);
 
     if (this.version < root_set.version || this.root_state_dirty) {
+
       // Reset the root state dirty boolean
       this.root_state_dirty = false;
 
@@ -285,7 +310,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
         }
         // If there is a lower bound we search for the string and use it
         else {
-          boolean found = searchFor(lower_bound, 8, sz);
+          boolean found = searchFor(0, lower_bound, 8, sz);
           start_pos = data.position();
           if (found) {
             start_element_endpos = found_item.end_pos;
@@ -299,7 +324,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
         }
         // Otherwise there is an upper bound so search for the string and use it
         else {
-          boolean found = searchFor(upper_bound, 8, sz);
+          boolean found = searchFor(0, upper_bound, 8, sz);
           end_pos = data.position();
           if (found) {
             end_element_startpos = found_item.start_pos;
@@ -307,7 +332,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
         }
       }
 
-      // Update the version of this to the parent.
+      // Update the version of this to the root version.
       this.version = root_set.version;
     }
   }
@@ -393,16 +418,36 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 //    return new JavaByteArray(buf, 0, pos);
 //  }
 
+
   /**
-   * Removes the byte array at the position of the element set in 'found_item'.
+   * Makes any cached information dirty because of a structural change.
    */
-  private void removeByteArrayAtPosition(DataSectionByteArray item) {
+  private void makeDirty() {
     // Tell the root set that any child subsets may be dirty
     if (root_set != this) {
       root_set.version += 1;
       root_set.root_state_dirty = true;
     }
     version += 1;
+    // Clear the section cache,
+    if (root_set.section_cache != null) {
+      root_set.section_cache.clear();
+    }
+  }
+
+  /**
+   * Removes the byte array at the position of the element set in 'found_item'.
+   */
+  private void removeByteArrayAtPosition(DataSectionByteArray item) {
+//    // Tell the root set that any child subsets may be dirty
+//    if (root_set != this) {
+//      root_set.version += 1;
+//      root_set.root_state_dirty = true;
+//    }
+//    version += 1;
+
+    // Tell the root set that any child subsets may be dirty
+    makeDirty();
 
     long ba_start_pos = item.getStartPosition();
     long ba_end_pos = item.getEndPosition();
@@ -437,12 +482,15 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // allows to distinguish between a 0x0FFF8 seqence in the binary data and
     // a record deliminator.
 
+//    // Tell the root set that any child subsets may be dirty
+//    if (root_set != this) {
+//      root_set.version += 1;
+//      root_set.root_state_dirty = true;
+//    }
+//    version += 1;
+
     // Tell the root set that any child subsets may be dirty
-    if (root_set != this) {
-      root_set.version += 1;
-      root_set.root_state_dirty = true;
-    }
-    version += 1;
+    makeDirty();
 
     this.start_element_endpos = -1;
     this.end_element_startpos = -1;
@@ -643,78 +691,54 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
   }
 
-//  /**
-//   * Search for the string value in the DataFile and return true if found.
-//   * When this method returns, the DataFile (data) object will be positioned at
-//   * either the location to insert the string into the correct
-//   * order or at the location of the value in the set.
-//   * <p>
-//   * We recursively divide up the ordered list to search for the value.
-//   *
-//   * @param value the value to search for.
-//   * @param start the start of the file to search for the string.
-//   * @param end the end of the file to search for the string.
-//   * @return true if the string was found, false otherwise.
-//   */
-//  private boolean searchFor(final ByteArray value,
-//                            final long start, final long end) {
-//
-//    // If start is end, the list is empty,
-//    if (start == end) {
-//      data.position(start);
-//      return false;
+  /**
+   * Puts a mid value in the local cache.
+   */
+  private void putInCache(DataSectionByteArray mid_value) {
+    // Simply add this to the list,
+    if (root_set.section_cache == null) {
+      root_set.section_cache = new ArrayList(16);
+    }
+
+    List sc = root_set.section_cache;
+    if (sc.size() >= 16) {
+      // Remove some elements from this,
+      Collections.shuffle(sc);
+      for (int i = 0; i < 6; ++i) {
+        sc.remove(sc.size() - 1);
+      }
+    }
+
+    sc.add(mid_value);
+  }
+
+  /**
+   * Queries the cache for any values that fall within the given position.
+   */
+  private DataSectionByteArray getFromCache(long mid_pos) {
+
+//    long cur_count = total_count.incrementAndGet();
+//    if ((cur_count % 100) == 0) {
+//      long cur_hit = hit_count.get();
+//      System.out.println("HIT PERCENT = " +
+//                         (((double) cur_hit) / (double) cur_count));
 //    }
-//
-//    // How large is the area we are searching in characters?
-//    long search_len = (end - start) / 2;
-//    // Read the string from the middle of the area
-//    final long mid_pos = start + ((search_len / 2) * 2);
-//
-//    // Search to the end of the string
-//    long str_end = scanForEndPosition(mid_pos, start, end);
-//    long str_start = scanForStartPosition(mid_pos - 2, start, end);
-//
-////    System.out.println("mid_pos = " + mid_pos);
-////    System.out.println("  start = " + start + ", end = " + end);
-////    System.out.println("  s = " + str_start + ", e = " + str_end);
-//
-//    // Now str_start will point to the start of the string and str_end to the
-//    // end (the char immediately after 0x0FFFF).
-//    // Read the midpoint string,
-//    ByteArray mid_value = byteArrayAtPosition(str_start, str_end);
-//
-//    // Compare the values
-//    int v = string_collator.compare(value, mid_value);
-//    // If str_start and str_end are the same as start and end, then the area
-//    // we are searching represents only 1 string, which is a return state
-//    final boolean last_str = (str_start == start && str_end == end);
-//
-//    if (v < 0) {  // if value < mid_value
-//      if (last_str) {
-//        // Position at the start if last str and value < this value
-//        data.position(str_start);
-//        return false;
-//      }
-//      // We search the head
-//      return searchFor(value, start, str_start);
-//    }
-//    else if (v > 0) {  // if value > mid_value
-//      if (last_str) {
-//        // Position at the end if last str and value > this value
-//        data.position(str_end);
-//        return false;
-//      }
-//      // We search the tail
-//      return searchFor(value, str_end, end);
-//    }
-//    else {  // if value == mid_value
-//      data.position(str_start);
-//      // Update internal state variables
-//      found_item_start = str_start;
-//      found_item_end = str_end;
-//      return true;
-//    }
-//  }
+
+    List<DataSectionByteArray> sc = root_set.section_cache;
+
+    if (sc == null) {
+      return null;
+    }
+    for (DataSectionByteArray b : sc) {
+      long s = b.getStartPosition();
+      long e = b.getEndPosition();
+      if (mid_pos >= s && mid_pos < e) {
+//        hit_count.incrementAndGet();
+        return b;
+      }
+    }
+    return null;
+  }
 
   /**
    * Search for the string value in the DataFile and return true if found.
@@ -729,8 +753,10 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * @param end the end of the file to search for the string.
    * @return true if the string was found, false otherwise.
    */
-  private boolean searchFor(final ByteArray value,
+  private boolean searchFor(final int stack_pos, final ByteArray value,
                             final long start, final long end) {
+
+    boolean check_cache = (use_sections_cache && stack_pos < 4);
 
     // If start is end, the list is empty,
     if (start == end) {
@@ -744,18 +770,34 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // Read the string from the middle of the area
     final long mid_pos = start + ((search_len / 2) * 2);
 
-    // Search to the start of the string we landed on,
-//    long str_end_TO = scanForEndPosition(mid_pos, start, end);
-    long str_start = scanForStartPosition(mid_pos - 2, start, end);
+    // Look up the mid value in the local cache,
+    DataSectionByteArray mid_value = null;
+    long str_start;
 
-    // Get the byte array at the given position where the start of the array
-    // is at 'str_start'. This byte array does not immediately know where the
-    // end of the string is.
-//    ByteArray mid_value = byteArrayAtPosition(str_start, str_end_TO);
-//    DataSectionByteArray mid_value_test =
-//                             new DataSectionByteArray(str_start, end, mid_pos);
-    DataSectionByteArray mid_value =
-                             new DataSectionByteArray(str_start, end, mid_pos);
+    if (check_cache) {
+      mid_value = getFromCache(mid_pos);
+    }
+
+    // Not found in cache,
+    if (mid_value == null) {
+      // Search to the start of the string we landed on,
+      str_start = scanForStartPosition(mid_pos - 2, start, end);
+
+      // Get the byte array at the given position where the start of the array
+      // is at 'str_start'. This byte array does not immediately know where the
+      // end of the string is.
+      mid_value = new DataSectionByteArray(str_start, end, mid_pos);
+
+      // Possibly cache this,
+      if (check_cache) {
+        putInCache(mid_value);
+      }
+
+    }
+    else {
+      // Fetch the start value from the cache,
+      str_start = mid_value.getStartPosition();
+    }
 
 //    // -- TESTING : compare the two objects --
 //
@@ -769,7 +811,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 //    // -- TESTING : END --
 
     // Compare the values
-    int v = string_collator.compare(value, mid_value);
+    int v = array_comparator.compare(value, mid_value);
 
     if (v < 0) {  // if value < mid_value
       // If we are at the final string then we know we won't find the
@@ -782,7 +824,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
         return false;
       }
       // We search the head
-      return searchFor(value, start, str_start);
+      return searchFor(stack_pos + 1, value, start, str_start);
     }
     else if (v > 0) {  // if value > mid_value
       // If str_start and str_end are the same as start and end, then the area
@@ -796,7 +838,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
         return false;
       }
       // We search the tail
-      return searchFor(value, str_end, end);
+      return searchFor(stack_pos + 1, value, str_end, end);
     }
     else {  // if value == mid_value
 //      final long str_end = str_end_TO;
@@ -806,6 +848,17 @@ public class OrderedSetData extends AbstractSet<ByteArray>
       found_item = mid_value;
       return true;
     }
+  }
+
+  /**
+   * Search for the given value in this set data between the start and end
+   * position. Assumes 'updateInternalState' has been called. Returns true
+   * if the value is found, and 'found_item' will contain the byte array.
+   * The position in 'data' will always be left with the location to insert
+   * a new item in the set in correct ordered position.
+   */
+  private boolean searchFor(final ByteArray value) {
+    return searchFor(0, value, this.start_pos, this.end_pos);
   }
 
   // ----------- Implemented from AbstractSet<String> ------------
@@ -882,7 +935,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     if (str == null) throw new NullPointerException();
     updateInternalState();
     // Look for the string in the file.
-    return searchFor((ByteArray) str, this.start_pos, this.end_pos);
+    return searchFor((ByteArray) str);
   }
 
   /**
@@ -898,11 +951,11 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // As per the contract, this method can not add values that compare below
     // the lower bound or compare equal or greater to the upper bound.
     if (lower_bound != null &&
-        string_collator.compare(value, lower_bound) < 0) {
+        array_comparator.compare(value, lower_bound) < 0) {
       throw new IllegalArgumentException("value < lower_bound");
     }
     if (upper_bound != null &&
-        string_collator.compare(value, upper_bound) >= 0) {
+        array_comparator.compare(value, upper_bound) >= 0) {
       throw new IllegalArgumentException("value >= upper_bound");
     }
 
@@ -911,7 +964,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // Find the index in the list of the value either equal to the given value
     // or the first value in the set comparatively more than the given value.
 //    System.out.println("sf: " + this.start_pos + " - " + this.end_pos);
-    boolean found = searchFor(value, this.start_pos, this.end_pos);
+    boolean found = searchFor(value);
     // If the value was found,
     if (found) {
       // Return false
@@ -944,11 +997,11 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // As per the contract, this method can not replace values that compare
     // below the lower bound or compare equal or greater to the upper bound.
     if (lower_bound != null &&
-        string_collator.compare(value, lower_bound) < 0) {
+        array_comparator.compare(value, lower_bound) < 0) {
       throw new IllegalArgumentException("value < lower_bound");
     }
     if (upper_bound != null &&
-        string_collator.compare(value, upper_bound) >= 0) {
+        array_comparator.compare(value, upper_bound) >= 0) {
       throw new IllegalArgumentException("value >= upper_bound");
     }
 
@@ -956,7 +1009,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
     // Find the index in the list of the value either equal to the given value
     // or the first value in the set comparatively more than the given value.
-    boolean found = searchFor(value, this.start_pos, this.end_pos);
+    boolean found = searchFor(value);
     // If the value was not found,
     if (!found) {
       // Return false
@@ -997,11 +1050,11 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     // As per the contract, this method can not replace values that compare
     // below the lower bound or compare equal or greater to the upper bound.
     if (lower_bound != null &&
-        string_collator.compare(value, lower_bound) < 0) {
+        array_comparator.compare(value, lower_bound) < 0) {
       throw new IllegalArgumentException("value < lower_bound");
     }
     if (upper_bound != null &&
-        string_collator.compare(value, upper_bound) >= 0) {
+        array_comparator.compare(value, upper_bound) >= 0) {
       throw new IllegalArgumentException("value >= upper_bound");
     }
 
@@ -1009,7 +1062,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
     // Find the index in the list of the value either equal to the given value
     // or the first value in the set comparatively more than the given value.
-    boolean found = searchFor(value, this.start_pos, this.end_pos);
+    boolean found = searchFor(value);
     // If the value was not found,
     if (!found) {
       // Add to the list,
@@ -1051,7 +1104,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     updateInternalState();
     // Find the index in the list of the value either equal to the given value
     // or the first value in the set comparatively more than the given value.
-    boolean found = searchFor((ByteArray) value, this.start_pos, this.end_pos);
+    boolean found = searchFor((ByteArray) value);
     // If the value was found,
     if (found) {
       // Remove it
@@ -1070,12 +1123,15 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
     updateInternalState();
 
+//    // Tell the root set that any child subsets may be dirty
+//    if (root_set != this) {
+//      root_set.version += 1;
+//      root_set.root_state_dirty = true;
+//    }
+//    version += 1;
+
     // Tell the root set that any child subsets may be dirty
-    if (root_set != this) {
-      root_set.version += 1;
-      root_set.root_state_dirty = true;
-    }
-    version += 1;
+    makeDirty();
 
     this.start_element_endpos = -1;
     this.end_element_startpos = -1;
@@ -1125,7 +1181,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    */
   @Override
   public Comparator<ByteArray> comparator() {
-    return string_collator;
+    return array_comparator;
   }
 
   /**
@@ -1192,7 +1248,6 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
     // If we know the end position of the first element then given a better
     // hieristic to the data section object,
-    long mid_pos = start_pos;
     DataSectionByteArray byte_array;
     byte_array = new DataSectionByteArray(start_pos, end_pos, start_pos);
     if (start_element_endpos >= 0) {
@@ -1201,9 +1256,6 @@ public class OrderedSetData extends AbstractSet<ByteArray>
 
     // Return the array,
     return byte_array;
-
-//    long found_end = scanForEndPosition(start_pos, start_pos, end_pos);
-//    return byteArrayAtPosition(start_pos, found_end);
 
   }
 

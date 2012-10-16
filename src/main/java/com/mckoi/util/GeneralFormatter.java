@@ -62,7 +62,7 @@ public class GeneralFormatter {
    * Appends a frame of time onto the given StringBuffer.  This is used to
    * construct a string representing the current time frame.
    */
-  private static void appendFrame(StringBuffer str, double num, String frame,
+  private static void appendFrame(StringBuilder str, double num, String frame,
                                   boolean do_round, boolean append_plural_s) {
     // Should we round the number?  (remove the decimal part)
     if (do_round) {
@@ -85,7 +85,7 @@ public class GeneralFormatter {
    * Appends time frame representation information into the given StringBuffer
    * for various types of visual time frame formats.
    */
-  public static void appendWeekType(StringBuffer str, double total,
+  public static void appendWeekType(StringBuilder str, double total,
                                     boolean shorthand) {
     double num;
     // Total number of weeks
@@ -108,7 +108,7 @@ public class GeneralFormatter {
     appendFrame(str, num, "ms", true, false);
   }
 
-  public static void appendDayType(StringBuffer str, double total,
+  public static void appendDayType(StringBuilder str, double total,
                                    boolean shorthand) {
     double num;
     // Total number of days
@@ -128,7 +128,7 @@ public class GeneralFormatter {
     appendFrame(str, num, "ms", true, false);
   }
 
-  public static void appendHourType(StringBuffer str, double total,
+  public static void appendHourType(StringBuilder str, double total,
                                     boolean shorthand) {
     double num;
     // Total number of hours
@@ -145,7 +145,7 @@ public class GeneralFormatter {
     appendFrame(str, num, "ms", true, false);
   }
 
-  public static void appendMinuteType(StringBuffer str, double total,
+  public static void appendMinuteType(StringBuilder str, double total,
                                       boolean shorthand) {
     double num;
     // Total number of minutes

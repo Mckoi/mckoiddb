@@ -28,8 +28,6 @@ package com.mckoi.odb;
 import com.mckoi.data.DataFile;
 import com.mckoi.data.FixedSizeSerialSet;
 import com.mckoi.data.Key;
-import com.mckoi.network.BlockId;
-import java.util.ArrayList;
 
 /**
  * A fixed size record structure that is a one way map of 16-byte Reference

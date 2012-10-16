@@ -509,10 +509,12 @@ public final class LocalFileSystemDatabase implements KeyObjectDatabase {
 
   // ---------- Implementation from KeyObjectDatabase -----------
 
+  @Override
   public KeyObjectTransaction createTransaction() {
     return database_ob.createTransaction();
   }
 
+  @Override
   public void publish(KeyObjectTransaction transaction) {
     // Enforce the requirement that publish operations are serial
     synchronized (commit_lock) {
@@ -520,10 +522,12 @@ public final class LocalFileSystemDatabase implements KeyObjectDatabase {
     }
   }
 
+  @Override
   public void dispose(KeyObjectTransaction transaction) {
     database_ob.dispose(transaction);
   }
 
+  @Override
   public void checkPoint() {
     database_ob.checkPoint();
   }

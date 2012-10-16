@@ -26,6 +26,7 @@
 package com.mckoi.odb;
 
 import com.mckoi.data.*;
+import com.mckoi.data.KeyObjectTransaction.Scope;
 import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.DataAddress;
 import com.mckoi.network.MckoiDDBAccess;
@@ -88,6 +89,11 @@ class ODBTransactionImpl implements ODBTransaction {
 
 //  private HashMap<Reference, ODBObject> TEST_cache = new HashMap();
 
+  /**
+   * Cached class reference map set.
+   */
+  private OrderedSetData cached_class_reference_map;
+  
 
   /**
    * The Key that contains static information about the data model, such as
@@ -204,14 +210,30 @@ class ODBTransactionImpl implements ODBTransaction {
 
 
   /**
+   * Returns an OrderedSetData object representing the class reference map.
+   */
+  private OrderedSetData getClassReferenceMap() {
+    OrderedSetData map = cached_class_reference_map;
+    if (map == null) {
+      DataFile cr_map =
+          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
+      map = new OrderedSetData(cr_map, dictionary_collator);
+      map.useSectionsCache(true);
+      cached_class_reference_map = map;
+    }
+    return map;
+  }
+  
+  /**
    * Looks up a class name is the system class dictionary and returns false
    * if the name is not defined.
    */
   boolean hasClassDirectoryEntry(String class_str) {
 
-    DataFile cr_map =
-          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
-    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
+    OrderedSetData map = getClassReferenceMap();
+//    DataFile cr_map =
+//          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
+//    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
 
@@ -257,9 +279,10 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   Reference getReferenceFromClassDictionary(String class_str) {
 
-    DataFile cr_map =
-          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
-    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
+    OrderedSetData map = getClassReferenceMap();
+//    DataFile cr_map =
+//          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
+//    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
 
@@ -306,9 +329,10 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   String getTypeStringFromClassDictionary(Reference ref) {
 
-    DataFile cr_map =
-          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
-    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
+    OrderedSetData map = getClassReferenceMap();
+//    DataFile cr_map =
+//          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
+//    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
 
@@ -354,9 +378,10 @@ class ODBTransactionImpl implements ODBTransaction {
    */
   void addToClassDictionary(String type_str, Reference ref) {
 
-    DataFile cr_map =
-          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
-    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
+    OrderedSetData map = getClassReferenceMap();
+//    DataFile cr_map =
+//          transaction.getDataFile(CLASS_REFERENCE_MAP_KEY, getReadWriteMode());
+//    OrderedSetData map = new OrderedSetData(cr_map, dictionary_collator);
 
     try {
 
@@ -616,83 +641,101 @@ class ODBTransactionImpl implements ODBTransaction {
 
     ODBObject ob;
 
-    // Get the bucket set for system class definitions,
-    OrderedSetData class_bucket_set = getBucketSetData(type);
+    // See if it's in the cache,
+    GeneralCacheKey gen_key = new ReferenceCacheKey(1, ref);
+    GeneralCache gen_cache = transaction.getGeneralCache(Scope.TRANSACTION);
+    Object[] content = (Object[]) gen_cache.get(gen_key);
 
-    try {
+    if (content == null) {
 
-      // The key being searched for,
-      ByteArray search_key = createSearchKey(ref);
-      // The tail set from the search key
-      OrderedSetData found_set = class_bucket_set.tailSet(search_key);
-      // If the tail set is empty or the found entry doesn't match, generate
-      // an error.
-      if (found_set.isEmpty()) {
-        throw new RuntimeException(
-                     MessageFormat.format("Class for ref {0} not found", ref));
-      }
-      ByteArray class_ser = found_set.first();
-      DataInputStream din = class_ser.getDataInputStream();
+      // Get the bucket set for system class definitions,
+      OrderedSetData class_bucket_set = getBucketSetData(type);
 
-      // Check the ref of the found record matches,
-      long rh = din.readLong();
-      long rl = din.readLong();
-
-      if (rh != ref.getHighLong() || rl != ref.getLowLong()) {
-        throw new RuntimeException(
-                     MessageFormat.format("Class for ref {0} not found", ref));
-      }
-
-      // Content of the object,
-      final Object[] content = new Object[type.getFieldCount()];
-
-      // Decode the body,
       try {
 
-        int i = 0;
-        while (true) {
-          byte val_type = din.readByte();
-          if (val_type == 0) {
-            // NULL
-            content[i] = null;
-          }
-          else if (val_type == 1) {
-            // Inline string
-            String str_item = din.readUTF();
-            content[i] = str_item;
-          }
-          else if (val_type == 2) {
-            // Reference
-            long ref_h = din.readLong();
-            long ref_l = din.readLong();
-            Reference ref_item = new Reference(ref_h, ref_l);
-            content[i] = ref_item;
-          }
-//          else if (val_type == 3) {
-//            // Resource key
-//            long ref_h = din.readLong();
-//            long ref_l = din.readLong();
-//            ResourceKey ref_item = new ResourceKey(ref_h, ref_l);
-//            content[i] = ref_item;
-//          }
-          else {
-            throw new RuntimeException("Object entry type error");
-          }
-          ++i;
+        // The key being searched for,
+        ByteArray search_key = createSearchKey(ref);
+        // The tail set from the search key
+        OrderedSetData found_set = class_bucket_set.tailSet(search_key);
+        // If the tail set is empty or the found entry doesn't match, generate
+        // an error.
+        if (found_set.isEmpty()) {
+          throw new RuntimeException(
+                    MessageFormat.format("Class for ref {0} not found", ref));
         }
+        ByteArray class_ser = found_set.first();
+        DataInputStream din = class_ser.getDataInputStream();
+
+        // Check the ref of the found record matches,
+        long rh = din.readLong();
+        long rl = din.readLong();
+
+        if (rh != ref.getHighLong() || rl != ref.getLowLong()) {
+          throw new RuntimeException(
+                    MessageFormat.format("Class for ref {0} not found", ref));
+        }
+
+        // Content of the object,
+        content = new Object[type.getFieldCount()];
+
+        // Decode the body,
+        try {
+
+          int i = 0;
+          while (true) {
+            byte val_type = din.readByte();
+            if (val_type == 0) {
+              // NULL
+              content[i] = null;
+            }
+            else if (val_type == 1) {
+              // Inline string
+              String str_item = din.readUTF();
+              content[i] = str_item;
+            }
+            else if (val_type == 2) {
+              // Reference
+              long ref_h = din.readLong();
+              long ref_l = din.readLong();
+              Reference ref_item = new Reference(ref_h, ref_l);
+              content[i] = ref_item;
+            }
+//            else if (val_type == 3) {
+//              // Resource key
+//              long ref_h = din.readLong();
+//              long ref_l = din.readLong();
+//              ResourceKey ref_item = new ResourceKey(ref_h, ref_l);
+//              content[i] = ref_item;
+//            }
+            else {
+              throw new RuntimeException("Object entry type error");
+            }
+            ++i;
+          }
+        }
+        catch (EOFException e) {
+          // Finished,
+        }
+
       }
-      catch (EOFException e) {
-        // Finished,
+      catch (IOException e) {
+        throw new RuntimeException(e);
       }
 
-      // Return an instance of the object,
-      ob = new ODBTransactionImpl.MaterializedODBObject(type, ref, content);
-      return ob;
+      // Put it in the cache,
+      gen_cache.put(gen_key, content);
 
     }
-    catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+
+    // Return an instance of the object,
+    ob = new ODBTransactionImpl.MaterializedODBObject(type, ref, content);
+    
+    // Note that anyone who changes the object within this transaction will
+    // change the cached 'content' object also. This is intentional. This
+    // means you will always see the correct content of the object.
+    
+    return ob;
+
   }
 
   /**
@@ -1195,15 +1238,36 @@ class ODBTransactionImpl implements ODBTransaction {
    * reference can not be dereferenced.
    */
   private Key dereference(Reference ref) {
-    DataFile lookup_table =
-              transaction.getDataFile(RESOURCE_LOOKUP_KEY, getReadWriteMode());
-    ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
-    Key key = lookup_sdata.get(ref);
-    
+
+    ReferenceCacheKey gen_key = new ReferenceCacheKey(2, ref);
+    GeneralCache gen_cache = transaction.getGeneralCache(Scope.TRANSACTION);
+    Key key = (Key) gen_cache.get(gen_key);
+
     if (key == null) {
-      throw new RuntimeException("Unable to dereference: " + ref);
+
+      DataFile lookup_table =
+              transaction.getDataFile(RESOURCE_LOOKUP_KEY, getReadWriteMode());
+      ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
+      key = lookup_sdata.get(ref);
+
+      if (key == null) {
+        throw new RuntimeException("Unable to dereference: " + ref);
+      }
+
+      gen_cache.put(gen_key, key);
+
     }
     return key;
+
+//    DataFile lookup_table =
+//              transaction.getDataFile(RESOURCE_LOOKUP_KEY, getReadWriteMode());
+//    ReferenceKeyLookup lookup_sdata = new ReferenceKeyLookup(lookup_table);
+//    Key key = lookup_sdata.get(ref);
+//    
+//    if (key == null) {
+//      throw new RuntimeException("Unable to dereference: " + ref);
+//    }
+//    return key;
   }
 
   /**
@@ -1314,6 +1378,7 @@ class ODBTransactionImpl implements ODBTransaction {
       DataFile list_df =
                       transaction.getDataFile(bucket_key, getReadWriteMode());
       list = new OrderedSetData(list_df, object_comparator);
+      list.useSectionsCache(true);
       bucket_cache.put(bucket_key, list);
     }
     return list;

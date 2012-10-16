@@ -143,6 +143,10 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
    */
   private boolean non_committable;
 
+  /**
+   * The local transaction general cache.
+   */
+  private GeneralCache trans_general_cache = null;
 
 
 
@@ -2134,6 +2138,23 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     }
 
   }
+
+  /**
+   * {@inhericDoc}
+   */
+  @Override
+  public GeneralCache getGeneralCache(Scope scope) {
+    if (scope.equals(Scope.TRANSACTION)) {
+      if (trans_general_cache == null) {
+        trans_general_cache = new WeakGeneralCache();
+      }
+      return trans_general_cache;
+    }
+    return NoOpGeneralCache.instance;
+  }
+
+
+
 
 //  /**
 //   * {@inhericDoc}

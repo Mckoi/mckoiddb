@@ -110,4 +110,26 @@ public interface KeyObjectTransaction {
    */
   public void prefetchKeys(Key[] keys);
 
+  /**
+   * Returns an implementation of GeneralCache used as a general cache of 
+   * Java object values in the given scope. The scope can either be
+   * TRANSACTION or SESSION. A cache with a scope of TRANSACTION will be
+   * disposed when the transaction is. A cache with a scope of session will
+   * be disposed when the session is.
+   * <p>
+   * Note that the cache created here is implementation specific. It is
+   * valid for this to return NoOpGeneralCache.instance.
+   */
+  public GeneralCache getGeneralCache(Scope scope);
+
+  
+  public enum Scope {
+    // Scope where the cache is disposed with the transaction ends,
+    TRANSACTION,
+    
+    // Scope where the cache is disposed when the database session ends,
+    SESSION,
+
+  };
+
 }

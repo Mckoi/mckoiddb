@@ -26,8 +26,8 @@
 package com.mckoi.util;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.text.StringCharacterIterator;
+import java.util.Date;
 
 /**
  * An immutable object that represents a frame of time down to the
@@ -107,7 +107,7 @@ public class TimeFrame {
     if (period == null) {
       return "";
     }
-    StringBuffer str = new StringBuffer();
+    StringBuilder str = new StringBuilder();
     double val = period.longValue();
     if (format_type == WEEKS) {
       GeneralFormatter.appendWeekType(str, val, shorthand);
@@ -147,6 +147,7 @@ public class TimeFrame {
   /**
    * Returns true if the TimeFrame is equal to another.
    */
+  @Override
   public boolean equals(Object ob) {
     TimeFrame tf = (TimeFrame) ob;
     if (tf == null) {
@@ -158,6 +159,7 @@ public class TimeFrame {
   /**
    * For Debugging.
    */
+  @Override
   public String toString() {
     return format(WEEKS);
   }

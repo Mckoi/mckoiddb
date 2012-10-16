@@ -138,7 +138,7 @@ public interface TreeSystem {
   boolean isNodeAvailableLocally(NodeReference node_ref);
 
   // ----- Node mutation -----
-  
+
   /**
    * Performs the sequence of node write operations described by the given
    * TreeWriteSequence object. This is used to flush a complete tree write
