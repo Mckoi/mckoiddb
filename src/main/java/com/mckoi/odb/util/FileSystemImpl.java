@@ -239,8 +239,7 @@ public class FileSystemImpl implements FileSystem {
   /**
    * Internal method that fetches the content file from the transaction.
    */
-  private DataFile secureGetFile(
-                     ODBTransaction t, ODBObject file_ob, String file_name) {
+  private DataFile secureGetFile(ODBObject file_ob, String file_name) {
 //    System.out.println("$$$ secureGetFile(" + file_name + ")");
 //    if (file_name.endsWith("web.xml")) {
 //      new Error().printStackTrace();
@@ -381,6 +380,18 @@ public class FileSystemImpl implements FileSystem {
     return new String(meta_out);
   }
 
+  /**
+   * Returns the named item.
+   */
+  private ODBObject getRoot() {
+    ODBObject root_ob = getTransaction().getNamedItem(named_root);
+    if (root_ob == null) {
+      throw new FileSystemException(
+                     "Unable to find named root: {0}", named_root);
+    }
+    return root_ob;
+  }
+  
 
   /**
    * Recursive method that traverses a path string and creates the directories
@@ -425,8 +436,7 @@ public class FileSystemImpl implements FileSystem {
       dirs.add(child_ob);
 
       // Add to the central directory index,
-      ODBList central_dir =
-                   transaction.getNamedItem(named_root).getList("directories");
+      ODBList central_dir = getRoot().getList("directories");
       central_dir.add(child_ob);
 
     }
@@ -444,8 +454,7 @@ public class FileSystemImpl implements FileSystem {
                          final ODBTransaction transaction, final String path) {
 
     // Go to the root,
-    ODBObject root_path =
-                       transaction.getNamedItem(named_root).getObject("root");
+    ODBObject root_path = getRoot().getObject("root");
     // Recurse,
     return createDirectoryIfNotExists(transaction, root_path,
                                       path.substring(1), path.substring(0, 1));
@@ -455,10 +464,9 @@ public class FileSystemImpl implements FileSystem {
    * Traverses to a directory entry if one exists for the path given. If the
    * path does not exist, returns null.
    */
-  private ODBObject traverseToDirectory(
-                         final ODBTransaction transaction, final String path) {
+  private ODBObject traverseToDirectory(final String path) {
 
-    ODBObject root_ob = transaction.getNamedItem(named_root);
+    ODBObject root_ob = getRoot();
 
     // Look for the path in the central directory,
     ODBList central_list = root_ob.getList("directories");
@@ -503,11 +511,8 @@ public class FileSystemImpl implements FileSystem {
     // Check the input is a valid path,
     checkValidDBPath(path_name);
 
-    ODBTransaction t = getTransaction();
-
-    ODBObject root_ob = t.getNamedItem(named_root);
     // Look for the path in the central directory,
-    ODBList central_list = root_ob.getList("directories");
+    ODBList central_list = getRoot().getList("directories");
 
     // Get the entry, or return false if not found,
     ODBObject dir_entry = central_list.getObject(path_name);
@@ -617,15 +622,13 @@ public class FileSystemImpl implements FileSystem {
       return false;
     }
 
-    ODBTransaction t = getTransaction();
-
     // Go to the parent and fetch the child meta,
     int p = file_name.lastIndexOf('/', file_name.length() - 1);
     String parent_path = file_name.substring(0, p + 1);
     String child_item = file_name.substring(p + 1);
 
     // Traverse to the directory of the file,
-    ODBObject path_ob = traverseToDirectory(t, parent_path);
+    ODBObject path_ob = traverseToDirectory(parent_path);
     if (path_ob == null) {
       // No directory so nothing to delete,
       return false;
@@ -658,8 +661,6 @@ public class FileSystemImpl implements FileSystem {
     // Invalidation check,
     checkInvalidated();
 
-    ODBTransaction t = getTransaction();
-
     ODBObject meta_ob;
 //    boolean is_directory = false;
 
@@ -668,7 +669,7 @@ public class FileSystemImpl implements FileSystem {
       checkValidDBPath(file_name);
 
       // Traverse to the directory entry,
-      ODBObject path_ob = traverseToDirectory(t, file_name);
+      ODBObject path_ob = traverseToDirectory(file_name);
       if (path_ob == null) {
         throw new FileSystemException("Path not found: {0}", file_name);
       }
@@ -688,7 +689,7 @@ public class FileSystemImpl implements FileSystem {
       String child_item = file_name.substring(p + 1);
 
       // Traverse to the directory entry,
-      ODBObject path_ob = traverseToDirectory(t, parent_path);
+      ODBObject path_ob = traverseToDirectory(parent_path);
       if (path_ob == null) {
         throw new FileSystemException("Path not found: {0}", parent_path);
       }
@@ -728,7 +729,6 @@ public class FileSystemImpl implements FileSystem {
     // Invalidation check,
     checkInvalidated();
 
-    ODBTransaction t = getTransaction();
     ODBObject meta_ob;
     boolean is_directory = false;
 
@@ -737,7 +737,7 @@ public class FileSystemImpl implements FileSystem {
       checkValidDBPath(file_name);
 
       // Traverse to the directory entry,
-      ODBObject path_ob = traverseToDirectory(t, file_name);
+      ODBObject path_ob = traverseToDirectory(file_name);
       if (path_ob == null) {
         throw new FileSystemException("Path not found: {0}", file_name);
       }
@@ -757,7 +757,7 @@ public class FileSystemImpl implements FileSystem {
       String child_item = file_name.substring(p + 1);
 
       // Traverse to the directory entry,
-      ODBObject path_ob = traverseToDirectory(t, parent_path);
+      ODBObject path_ob = traverseToDirectory(parent_path);
       if (path_ob == null) {
         throw new FileSystemException("Path not found: {0}", parent_path);
       }
@@ -916,10 +916,8 @@ public class FileSystemImpl implements FileSystem {
 
     checkValidDBPath(dir);
 
-    ODBTransaction t = getTransaction();
-
     // Traverse to the directory entry,
-    ODBObject path_ob = traverseToDirectory(t, dir);
+    ODBObject path_ob = traverseToDirectory(dir);
     if (path_ob == null) {
       // Returns null if not found,
       return null;
@@ -946,10 +944,8 @@ public class FileSystemImpl implements FileSystem {
 
     checkValidDBPath(dir);
 
-    ODBTransaction t = getTransaction();
-
     // Traverse to the directory entry,
-    ODBObject path_ob = traverseToDirectory(t, dir);
+    ODBObject path_ob = traverseToDirectory(dir);
     if (path_ob == null) {
       // Returns null if not found,
       return null;
@@ -971,10 +967,8 @@ public class FileSystemImpl implements FileSystem {
 
     checkValidDBPath(dir);
 
-    ODBTransaction t = getTransaction();
-
     // Traverse to the directory entry,
-    ODBObject path_ob = traverseToDirectory(t, dir);
+    ODBObject path_ob = traverseToDirectory(dir);
     if (path_ob == null) {
       // Returns null if not found,
       return null;
@@ -1005,14 +999,13 @@ public class FileSystemImpl implements FileSystem {
 
     String meta_string;
     ODBObject file_ob;
-    ODBTransaction t = getTransaction();
 
     if (item_name.endsWith("/")) {
       // It's a directory,
       checkValidDBPath(item_name);
 
       // Traverse to the directory entry,
-      ODBObject path_ob = traverseToDirectory(t, item_name);
+      ODBObject path_ob = traverseToDirectory(item_name);
       if (path_ob == null) {
         return null;
       }
@@ -1034,7 +1027,7 @@ public class FileSystemImpl implements FileSystem {
       child_item = item_name.substring(p + 1);
 
       // Traverse to the directory entry,
-      path_ob = traverseToDirectory(t, parent_path);
+      path_ob = traverseToDirectory(parent_path);
       if (path_ob == null) {
         return null;
       }
@@ -1070,15 +1063,13 @@ public class FileSystemImpl implements FileSystem {
     // Check the file name is valid,
     checkValidDBFile(file_name);
 
-    ODBTransaction t = getTransaction();
-
     // Go to the parent and fetch the child meta,
     int p = file_name.lastIndexOf('/', file_name.length() - 1);
     String parent_path = file_name.substring(0, p + 1);
     String child_item = file_name.substring(p + 1);
 
     // Traverse to the directory of the file,
-    ODBObject path_ob = traverseToDirectory(t, parent_path);
+    ODBObject path_ob = traverseToDirectory(parent_path);
     if (path_ob == null) {
       return null;
     }
@@ -1092,7 +1083,7 @@ public class FileSystemImpl implements FileSystem {
       return null;
     }
 
-    return secureGetFile(t, file_ob, file_name);
+    return secureGetFile(file_ob, file_name);
   }
 
   @Override
@@ -1139,10 +1130,8 @@ public class FileSystemImpl implements FileSystem {
 
     String parent_path = parent_path_cur;
 
-    ODBTransaction t = getTransaction();
-
     // Traverse to the directory of the file,
-    ODBObject path_ob = traverseToDirectory(t, parent_path);
+    ODBObject path_ob = traverseToDirectory(parent_path);
     if (path_ob == null) {
       throw new FileSystemException("Path not found: {0}", parent_path);
     }
@@ -1164,6 +1153,8 @@ public class FileSystemImpl implements FileSystem {
     // Get the meta and content data from the current file object,
     String meta = file_cur_ob.getString("meta");
     ODBData content = file_cur_ob.getData("content");
+
+    ODBTransaction t = getTransaction();
 
     // Make a new file object,
     file_new_ob = t.constructObject(t.findClass("FS.File"),
@@ -1375,7 +1366,7 @@ public class FileSystemImpl implements FileSystem {
   public void commit() throws CommitFaultException {
     checkInvalidated();
     invalidate();
-    transaction.commit();
+    getTransaction().commit();
   }
 
 
@@ -1587,7 +1578,7 @@ public class FileSystemImpl implements FileSystem {
                               "getDataFile not supported for this file type");
       }
       // Quickly construct the DataFile from the item object,
-      return secureGetFile(getTransaction(), item_ob, getAbsoluteName());
+      return secureGetFile(item_ob, getAbsoluteName());
     }
 
     @Override
