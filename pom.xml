@@ -7,13 +7,19 @@
   <artifactId>MckoiDDB</artifactId>
   <packaging>jar</packaging>
   <name>Mckoi Distributed Database</name>
-  <version>1.4-dev</version>
+  <version>1.4-SNAPSHOT</version>
   <url>http://www.mckoi.com/mckoiddb/index.html</url>
   <description>
     The main component of the Mckoi distributed database system, which comprises
     the data access and modeling API, and associated daemon services and admin
     tools.
   </description>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
 
   <licenses>
     <license>
@@ -75,6 +81,19 @@
       </plugin>
 
     </plugins>
+
+    <!-- Include legal documents -->
+    <resources>
+      <resource>
+        <directory>${basedir}/distrib_files</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>COPYRIGHT</include>
+          <include>LICENSE.txt</include>
+        </includes>
+      </resource>
+    </resources>
+
   </build>
 
   <properties>
