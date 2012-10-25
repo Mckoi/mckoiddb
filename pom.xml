@@ -85,6 +85,9 @@
     <!-- Include legal documents -->
     <resources>
       <resource>
+        <directory>src/main/resources/</directory>
+      </resource>
+      <resource>
         <directory>${basedir}/distrib_files</directory>
         <targetPath>META-INF</targetPath>
         <includes>
