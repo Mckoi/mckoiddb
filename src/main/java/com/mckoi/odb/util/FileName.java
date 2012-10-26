@@ -54,7 +54,17 @@ public class FileName {
    * The file identifier string.
    */
   private final String file;
-  
+
+  /**
+   * The previous directory.
+   */
+  public static final FileName PREVIOUS_DIR = new FileName("../");
+
+  /**
+   * The current directory.
+   */
+  public static final FileName CURRENT_DIR = new FileName("./");
+
   /**
    * Constructor.
    */
