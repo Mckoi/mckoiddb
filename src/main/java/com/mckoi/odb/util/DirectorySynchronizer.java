@@ -381,21 +381,26 @@ public class DirectorySynchronizer {
    * A SynchronizerRepository of a directory hierarchy in the local file
    * system.
    */
-  private static class JavaRepository implements SynchronizerRepository {
+  public static class JavaRepository implements SynchronizerRepository {
 
-    private final File local_base_dir;
+    private final File local_base_dir_or_file;
+    private final boolean is_single;
 
-    JavaRepository(File local_base_dir) {
-      this.local_base_dir = local_base_dir;
+    public JavaRepository(File local_base_dir_or_file) {
+      this.local_base_dir_or_file = local_base_dir_or_file;
+      this.is_single = local_base_dir_or_file.isFile();
     }
 
     private File toFile(String path) {
+      if (is_single) {
+        throw new RuntimeException("repository is a single object");
+      }
       // The path must start with '/', which we remove in this implementation,
       if (!path.startsWith("/")) {
         throw new RuntimeException("path must start with '/'");
       }
       path = path.substring(1);
-      File f_path = local_base_dir;
+      File f_path = local_base_dir_or_file;
       if (path.length() > 0) {
         f_path = new File(f_path, path);
       }
@@ -411,6 +416,17 @@ public class DirectorySynchronizer {
     
     @Override
     public List<SynchronizerFile> allFiles(String path) {
+      // If it's a single, return the file or empty list,
+      if (is_single) {
+        if (path.equals("/")) {
+          return Collections.singletonList(
+                             (SynchronizerFile) new JavaFile(local_base_dir_or_file));
+        }
+        else {
+          return Collections.EMPTY_LIST;
+        }
+      }
+      // Handle the rest of the files,
       List<SynchronizerFile> files_list = new ArrayList();
       File[] files = getFileArray(path);
       for (File f : files) {
@@ -423,6 +439,10 @@ public class DirectorySynchronizer {
 
     @Override
     public List<String> allSubDirectories(String path) {
+      // If it's a single, return empty list,
+      if (is_single) {
+        return Collections.EMPTY_LIST;
+      }
       List<String> dirs_list = new ArrayList();
       File[] files = getFileArray(path);
       for (File f : files) {
@@ -490,11 +510,11 @@ public class DirectorySynchronizer {
   /**
    * An implementation of SynchronizerFile for a java.io.File object.
    */
-  private static class JavaFile implements SynchronizerFile {
-    
+  public static class JavaFile implements SynchronizerFile {
+
     private final File file;
-    
-    JavaFile(File file) {
+
+    public JavaFile(File file) {
       this.file = file;
     }
 
@@ -577,27 +597,45 @@ public class DirectorySynchronizer {
    * An implementation of SynchronizerRepository for a Mckoi FileSystem
    * implementation.
    */
-  private static class MckoiRepository implements SynchronizerRepository {
+  public static class MckoiRepository implements SynchronizerRepository {
 
     private final FileSystem file_sys;
-    private final String base_path;
+    private final String base_path_or_file;
+    private final FileInfo single_file;
 
-    MckoiRepository(com.mckoi.odb.util.FileSystem file_sys, String base_path) {
+    public MckoiRepository(FileSystem file_sys, String base_path_or_file) {
       this.file_sys = file_sys;
-      this.base_path = base_path;
+      this.base_path_or_file = base_path_or_file;
+      FileInfo fi = file_sys.getFileInfo(base_path_or_file);
+      single_file = (fi != null && fi.isFile()) ? fi : null;
     }
 
     private String resolvePath(String path) {
+      if (single_file != null) {
+        throw new RuntimeException("repository is a single object");
+      }
       // The path must start with '/', which we remove in this implementation,
       if (!path.startsWith("/")) {
         throw new RuntimeException("path must start with '/'");
       }
       path = path.substring(1);
-      return base_path + path;
+      return base_path_or_file + path;
     }
 
     @Override
     public List<SynchronizerFile> allFiles(String path) {
+      // If it's a single, return the file or empty list,
+      if (single_file != null) {
+        if (path.equals("/")) {
+          return Collections.singletonList(
+                    (SynchronizerFile) new MckoiFile(
+                                  file_sys, base_path_or_file, single_file));
+        }
+        else {
+          return Collections.EMPTY_LIST;
+        }
+      }
+      // Handle the rest of the files,
       List<FileInfo> files = file_sys.getFileList(resolvePath(path));
       List<SynchronizerFile> out_files = new ArrayList(files.size());
       for (FileInfo file : files) {
@@ -608,6 +646,11 @@ public class DirectorySynchronizer {
 
     @Override
     public List<String> allSubDirectories(String path) {
+      // If it's a single, return empty list,
+      if (single_file != null) {
+        return Collections.EMPTY_LIST;
+      }
+
       List<FileInfo> dirs = file_sys.getSubDirectoryList(resolvePath(path));
       List<String> out_dirs = new ArrayList(dirs.size());
       for (FileInfo dir : dirs) {
@@ -689,13 +732,14 @@ public class DirectorySynchronizer {
   /**
    * An implementation of SynchronizerFile for a Mckoi FileInfo object.
    */
-  private static class MckoiFile implements SynchronizerFile {
+  public static class MckoiFile implements SynchronizerFile {
     
     private final FileSystem file_sys;
     private final String absolute_file_name;
     private FileInfo file_info;
 
-    MckoiFile(FileSystem file_sys, String absolute_file_name, FileInfo file_info) {
+    public MckoiFile(FileSystem file_sys,
+                     String absolute_file_name, FileInfo file_info) {
       this.file_sys = file_sys;
       this.absolute_file_name = absolute_file_name;
       this.file_info = file_info;
@@ -769,14 +813,14 @@ public class DirectorySynchronizer {
   /**
    * An implementation of SynchronizerRepository for a Zip file.
    */
-  private static class ZipRepository implements SynchronizerRepository {
+  public static class ZipRepository implements SynchronizerRepository {
 
     private final File zip_file_ob;
     private final ZipFile zip_file;
     private List<String> zip_dir_list;
     private List<ZipFileObject> zip_file_list;
 
-    ZipRepository(File zip_file_ob) throws IOException {
+    public ZipRepository(File zip_file_ob) throws IOException {
       this.zip_file_ob = zip_file_ob;
       this.zip_file = new ZipFile(zip_file_ob);
     }
@@ -792,12 +836,15 @@ public class DirectorySynchronizer {
         ZipEntry entry = entries.nextElement();
         String name = entry.getName();
         if (!entry.isDirectory()) {
-          // Probably don't need this, but just incase we get some weird
-          // .zip files.
-          int delim = name.lastIndexOf("/");
-          if (delim > 0) {
-            String dir_name = name.substring(0, delim + 1);
-            directories.add("/" + dir_name);
+          // Some zip files don't have directory entries, so we need to make
+          // sure all the sub-directories of a file are included,
+          String path_str = "/" + name;
+          while (true) {
+            int delim = path_str.lastIndexOf("/");
+            if (delim <= 0) break;
+            path_str = path_str.substring(0, delim + 1);
+            directories.add(path_str);
+            path_str = path_str.substring(0, delim);
           }
           file_obs.add(new ZipFileObject(zip_file, entry));
         }
@@ -822,7 +869,7 @@ public class DirectorySynchronizer {
     @Override
     public List<SynchronizerFile> allFiles(String path) {
       List<SynchronizerFile> out_list = new ArrayList();
-      int p = Collections.binarySearch(zip_file_list, path, zip_path_comparator);
+      int p = Collections.binarySearch(zip_file_list, path, ZIP_PATH_COMPARATOR);
       if (p < 0) {
         p = -(p + 1);
       }
@@ -843,6 +890,8 @@ public class DirectorySynchronizer {
 
     @Override
     public List<String> allSubDirectories(String path) {
+//      System.out.println(" subDirs = '" + path + "'");
+//      System.out.println(" zip_dir_list = " + zip_dir_list);
       List<String> out_list = new ArrayList();
       int p = Collections.binarySearch(zip_dir_list, path);
       if (p < 0) {
@@ -851,6 +900,7 @@ public class DirectorySynchronizer {
       else {
         p = p + 1;
       }
+//      System.out.println(" p = " + p);
       int sz = zip_dir_list.size();
       while (p < sz) {
         String d = zip_dir_list.get(p);
@@ -864,6 +914,7 @@ public class DirectorySynchronizer {
         }
         ++p;
       }
+//      System.out.println(" out_list = " + out_list);
       return out_list;
     }
 
@@ -871,7 +922,7 @@ public class DirectorySynchronizer {
     public SynchronizerFile getFileObject(String path, String file_name) {
       String absolute_name = path + file_name;
       int p = Collections.binarySearch(zip_file_list,
-                                       absolute_name, zip_path_comparator);
+                                       absolute_name, ZIP_PATH_COMPARATOR);
       if (p >= 0) {
         return zip_file_list.get(p);
       }
@@ -904,7 +955,7 @@ public class DirectorySynchronizer {
     
   }
 
-  private static class ZipFileObject
+  public static class ZipFileObject
                        implements SynchronizerFile, Comparable<ZipFileObject> {
 
     private final ZipFile zip_file;
@@ -999,7 +1050,7 @@ public class DirectorySynchronizer {
 
   }
 
-  private static Comparator zip_path_comparator = new Comparator() {
+  public final static Comparator ZIP_PATH_COMPARATOR = new Comparator() {
     
     private String getPath(Object o) {
       if (o instanceof String) {
