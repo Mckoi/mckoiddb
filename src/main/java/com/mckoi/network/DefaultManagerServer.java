@@ -25,15 +25,9 @@
 
 package com.mckoi.network;
 
-import com.mckoi.data.*;
+import com.mckoi.data.KeyObjectDatabase;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -278,7 +272,7 @@ public abstract class DefaultManagerServer {
 
       // Cycle through the block servers list,
       synchronized (block_servers_map) {
-        if (block_servers_list.size() == 0) {
+        if (block_servers_list.isEmpty()) {
           return;
         }
         if (init == false) {
@@ -325,7 +319,6 @@ public abstract class DefaultManagerServer {
    */
   private int getUniqueManagerID() {
     if (manager_unique_id == -1) {
-      new Error().printStackTrace();
       throw new RuntimeException(
                        "This manager has not been registered to the network");
     }
@@ -1606,7 +1599,7 @@ public abstract class DefaultManagerServer {
               "Moving current_address_space_end past unavailable block");
 
       boolean next_block = false;
-      BlockId block_id = null;
+      BlockId block_id;
       synchronized (allocation_lock) {
         block_id = current_address_space_end.getBlockId();
         int data_id = current_address_space_end.getDataId();
@@ -1750,6 +1743,7 @@ public abstract class DefaultManagerServer {
     /**
      * {@inheritDoc }
      */
+    @Override
     public ProcessResult process(MessageStream message_stream) {
       // The reply message,
       MessageStream reply_message = new MessageStream(32);
@@ -2179,7 +2173,7 @@ public abstract class DefaultManagerServer {
       final BlockId block_id;
       final int data_id;
       boolean next_block = false;
-      BlockId next_block_id = null;
+      BlockId next_block_id;
 
       synchronized (allocation_lock) {
 

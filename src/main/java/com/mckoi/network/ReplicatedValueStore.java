@@ -1977,7 +1977,9 @@ public class ReplicatedValueStore {
             if (isConnectionFault(m)) {
               tracker.reportServiceDownClientReport(machine, "manager");
             }
-            System.out.println(m.getExternalThrowable().getStackTrace());
+            log.log(Level.WARNING,
+                    "Manager service External exception; {0}",
+                    new Object[] { m.getExternalThrowable().getStackTrace() });
             throw new RuntimeException(m.getErrorMessage());
           }
           else {
