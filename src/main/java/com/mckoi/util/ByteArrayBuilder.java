@@ -26,6 +26,7 @@
 package com.mckoi.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 
@@ -86,6 +87,32 @@ public class ByteArrayBuilder extends OutputStream {
    */
   public byte[] getBuffer() {
     return buf;
+  }
+
+  /**
+   * Copies up to 'count' bytes from the given input stream. Returns the
+   * number of bytes copied, or -1 if the end of the input stream is reached.
+   */
+  public int fillFromInputStream(InputStream in, int limit) throws IOException {
+    if (in == null) throw new NullPointerException();
+    if (limit < 0) throw new IllegalArgumentException("limit < 0");
+    // Don't let limit be over 1 MB
+    limit = Math.min(limit, 1024 * 1024);
+    ensureCanWrite(limit);
+    int act_read = in.read(buf, count, limit);
+    if (act_read > 0) {
+      count += act_read;
+    }
+    return act_read;
+  }
+
+  /**
+   * Fills this builder fully from the data on the InputStream.
+   */
+  public void fillFully(InputStream in) throws IOException {
+    while (fillFromInputStream(in, 8192) != -1) {
+      // Keep filling...
+    }
   }
 
   // --- OutputStream ---
