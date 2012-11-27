@@ -33,7 +33,7 @@ import java.util.Iterator;
  * @author Tobias Downer
  */
 
-public interface ProcessResult extends Iterable<Message> {
+interface ProcessResult extends Iterable<Message> {
 
   /**
    * Returns the iterator of messages in the result.

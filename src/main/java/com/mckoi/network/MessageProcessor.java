@@ -32,7 +32,7 @@ package com.mckoi.network;
  * @author Tobias Downer
  */
 
-public interface MessageProcessor {
+interface MessageProcessor {
 
   /**
    * Processes the given message string, and returns a MessageStream that
