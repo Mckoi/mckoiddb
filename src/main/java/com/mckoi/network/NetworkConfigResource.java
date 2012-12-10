@@ -179,8 +179,6 @@ public abstract class NetworkConfigResource {
         }
       }
 
-      log.info("Updating from new network configuration.");
-
       HashSet<String> all_ips = new HashSet();
       ArrayList<String> call_allowed_ips = new ArrayList();
       boolean alla_ips = false;
@@ -207,12 +205,35 @@ public abstract class NetworkConfigResource {
 
       // Synchronize on 'state_lock' while we update the state,
       synchronized (state_lock) {
+        // Did the configuration change?
+        boolean changed = false;
+        if (all_machine_nodes == null ||
+            catchall_allowed_ips == null ||
+            allowed_ips == null) {
+          changed = true;
+        }
+        else {
+          if (!all_machine_nodes.equals(network_nodelist) ||
+               allow_all_ips != alla_ips ||
+              !catchall_allowed_ips.equals(call_allowed_ips) ||
+              !allowed_ips.equals(all_ips) ||
+               configcheck_timeout != set_conf_timeout) {
+            changed = true;
+          }
+        }
+
         // The list of all machine nodes,
         all_machine_nodes = network_nodelist;
         allow_all_ips = alla_ips;
         catchall_allowed_ips = call_allowed_ips;
         allowed_ips = all_ips;
         configcheck_timeout = set_conf_timeout;
+
+        // Report if the configuration changed,
+        if (changed) {
+          log.info("Updating from new network configuration.");
+        }
+
       }
 
     }
