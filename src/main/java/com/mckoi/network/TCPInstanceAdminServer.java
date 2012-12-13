@@ -163,8 +163,20 @@ public class TCPInstanceAdminServer implements Runnable {
       }
       val = val + "ddb.log";
 
+      int logfile_limit = (1 * 1024 * 1024);
+      String lf_limit = node_properties.getProperty("logfile_limit");
+      if (lf_limit != null) {
+        logfile_limit = Integer.parseInt(lf_limit);
+      }
+      int logfile_count = 4;
+      String lf_count = node_properties.getProperty("logfile_count");
+      if (lf_count != null) {
+        logfile_count = Integer.parseInt(lf_count);
+      }
+
       // Output to the log file,
-      FileHandler fhandler = new FileHandler(val, true);
+      FileHandler fhandler =
+                      new FileHandler(val, logfile_limit, logfile_count, true);
       fhandler.setFormatter(new SimpleFormatter());
       log.addHandler(fhandler);
       // Disable using parent handlers for log (disables logging to system.err)
