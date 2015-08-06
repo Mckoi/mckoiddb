@@ -1,4 +1,4 @@
-## MckoiDDB
+## MckoiDDB: Mckoi Distributed Database
 
 MckoiDDB is a distributed database system written in Java. MckoiDDB can be
 installed on multiple servers and coordinates the storage, management and
