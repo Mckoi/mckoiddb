@@ -1,35 +1,30 @@
-/**
- * com.mckoi.runtime.AdminConsole  Jul 4, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.runtime;
 
 import com.mckoi.network.AdminInterpreter;
+import com.mckoi.network.NetDiscoveryHelper;
 import com.mckoi.network.NetworkConfigResource;
 import com.mckoi.network.NetworkProfile;
+import com.mckoi.network.TCPConnectorValues;
 import com.mckoi.util.CommandLine;
 import java.io.*;
+import java.net.NetworkInterface;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,7 +50,10 @@ public class AdminConsole {
 
     String network_conf_arg = null;
     String network_pass_arg = null;
+    String if_arg = null;
     boolean no_console = false;
+
+    NetworkInterface out_net_if = null;
 
     StringWriter wout = new StringWriter();
     PrintWriter pout = new PrintWriter(wout);
@@ -82,21 +80,51 @@ public class AdminConsole {
       else {
         network_conf_arg = "network.conf";
       }
-      
+
       network_pass_arg = command_line.switchArgument("-netpassword");
+      if_arg = command_line.switchArgument("-if");
+
       no_console = command_line.containsSwitch("-noconsole");
+
+      // Check arguments that can be null,
+      if (network_conf_arg == null) {
+        pout.println("Error, no network configuration file/url given.");
+        failed = true;
+      }
+      if (network_pass_arg == null) {
+        pout.println("Error, no network password given.");
+        failed = true;
+      }
+//      if (if_arg == null) {
+//        pout.println("Error, no network interface given.");
+//        pout.println("Valid interface names on this machine:");
+//        NetDiscoveryHelper.printValidInterfaces(pout);
+//        failed = true;
+//      }
+
+      // Validation,
+      if (!failed) {
+        if (if_arg != null) {
+          // Validate interface argument
+          out_net_if = NetworkInterface.getByName(if_arg);
+          if (out_net_if == null) {
+            pout.println("Error, network interface not found: " + if_arg);
+            pout.println("Valid interface names on this machine:");
+            NetDiscoveryHelper.printValidInterfaces(pout);
+            failed = true;
+          }
+        }
+      }
+
+    }
+    catch (IOException e) {
+      pout.println("IOException: " + e.getMessage());
+      e.printStackTrace(pout);
+      failed = true;
     }
     catch (Throwable e) {
-      pout.println("Error parsing arguments.");
-      failed = true;
-    }
-    // Check arguments that can be null,
-    if (network_conf_arg == null) {
-      pout.println("Error, no network configuration file/url given.");
-      failed = true;
-    }
-    if (network_pass_arg == null) {
-      pout.println("Error, no network password given.");
+      pout.println("Error parsing arguments: " + e.getMessage());
+      e.printStackTrace(pout);
       failed = true;
     }
 
@@ -116,7 +144,13 @@ public class AdminConsole {
       System.out.println("  The challenge password used in all connection handshaking");
       System.out.println("  throughout the Mckoi network. All machines must have the");
       System.out.println("  same net password.");
+      System.out.println("-if [network interface name]");
+      System.out.println("  The network interface name used to talk to the DDB");
+      System.out.println("  network, necessary for routing on IPv6 networks running");
+      System.out.println("  link local addresses. (eg. 'eth0')");
+      System.out.println("  Optional, but necessary for IPv6 link local networks.");
       System.out.println();
+      pout.flush();
       System.out.println(wout.toString());
 
     }
@@ -143,8 +177,10 @@ public class AdminConsole {
         NetworkConfigResource network_conf_resource =
                                 NetworkConfigResource.parse(network_conf_arg);
 
+        TCPConnectorValues properties =
+                          new TCPConnectorValues(network_pass_arg, out_net_if);
         NetworkProfile network_profile =
-                                   NetworkProfile.tcpConnect(network_pass_arg);
+                                   NetworkProfile.tcpConnect(properties);
         network_profile.setNetworkConfiguration(network_conf_resource);
 
         AdminInterpreter interpreter =

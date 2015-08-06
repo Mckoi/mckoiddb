@@ -1,26 +1,18 @@
-/**
- * com.mckoi.network.MckoiDDBClientUtils  Jul 19, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
@@ -28,8 +20,10 @@ package com.mckoi.network;
 import com.mckoi.util.GeneralParser;
 import java.io.*;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.MessageFormat;
 import java.util.Properties;
 
 /**
@@ -58,20 +52,25 @@ public class MckoiDDBClientUtils {
   /**
    * Creates a standard direct client connection over a TCP network.
    *
-   * @param manager_server the address of the manager server on the network.
+   * @param manager_servers the address of the manager servers on the network.
    * @param network_password the network password assigned the network.
-   * @param latency a latency in ms artifically added to each communication
-   *   for latency testing purposes.
+   * @param output_net_interface the interface for outgoing communication
+   *   (for IPv6)
+   * @param introduced_latency a latency in ms artifically added to each
+   *   communication for latency testing purposes.
    * @param lnc the LocalNetworkCache used to cache information locally.
    * @param max_transaction_node_heap_size the maximum size of the node heap
    *   for each individual transaction's writes.
+   * @return 
    */
   public static MckoiDDBClient connectTCP(
                    ServiceAddress[] manager_servers, String network_password,
+                   NetworkInterface output_net_interface,
                    int introduced_latency, LocalNetworkCache lnc,
                    long max_transaction_node_heap_size) {
     TCPMckoiDDBClient client =
         new TCPMckoiDDBClient(manager_servers, network_password,
+                              output_net_interface,
                               introduced_latency, lnc,
                               max_transaction_node_heap_size);
     client.connect();
@@ -81,16 +80,21 @@ public class MckoiDDBClientUtils {
   /**
    * Creates a standard direct client connection over a TCP network.
    *
-   * @param manager_server the address of the manager server on the network.
+   * @param manager_servers the address of the manager server on the network.
    * @param network_password the network password assigned the network.
-   * @param latency a latency in ms artifically added to each communication
-   *   for latency testing purposes.
+   * @param output_net_interface the interface for outgoing communication
+   *   (for IPv6)
+   * @param introduced_latency a latency in ms artifically added to each
+   *   communication for latency testing purposes.
    * @param lnc the LocalNetworkCache used to cache information locally.
+   * @return 
    */
   public static MckoiDDBClient connectTCP(
                    ServiceAddress[] manager_servers, String network_password,
+                   NetworkInterface output_net_interface,
                    int introduced_latency, LocalNetworkCache lnc) {
     return connectTCP(manager_servers, network_password,
+                      output_net_interface,
                       introduced_latency, lnc,
                       DEFAULT_NODE_CACHE_SIZE);
   }
@@ -102,14 +106,19 @@ public class MckoiDDBClientUtils {
    * @param manager_servers the address of the manager servers on the network
    *   ordered by access priority.
    * @param network_password the network password assigned the network.
-   * @param latency a latency in ms artifically added to each communication
-   *   for latency testing purposes.
+   * @param output_net_interface the interface for outgoing communication
+   *   (for IPv6)
+   * @param introduced_latency a latency in ms artifically added to each
+   *   communication for latency testing purposes.
+   * @return 
    */
   public static MckoiDDBClient connectTCP(
-                     ServiceAddress[] manager_servers, String network_password,
-                     int introduced_latency) {
+              ServiceAddress[] manager_servers,
+              String network_password, NetworkInterface output_net_interface,
+              int introduced_latency) {
     return connectTCP(
-        manager_servers, network_password, introduced_latency,
+        manager_servers, network_password, output_net_interface,
+        introduced_latency,
         JVMState.getJVMCacheForManager(manager_servers, DEFAULT_CACHE_CONFIG));
   }
 
@@ -120,10 +129,14 @@ public class MckoiDDBClientUtils {
    * @param manager_servers the address of the manager servers on the network
    *   ordered by access priority.
    * @param network_password the network password assigned the network.
+   * @param output_net_interface the interface for outgoing communication
+   *   (for IPv6)
+   * @return 
    */
   public static MckoiDDBClient connectTCP(
-                  ServiceAddress[] manager_servers, String network_password) {
-    return connectTCP(manager_servers, network_password, 0);
+                  ServiceAddress[] manager_servers, String network_password,
+                  NetworkInterface output_net_interface) {
+    return connectTCP(manager_servers, network_password, output_net_interface, 0);
   }
 
   /**
@@ -132,6 +145,10 @@ public class MckoiDDBClientUtils {
    * 'manager_address' is a ServiceAddress string of the manager server in the
    * network (eg. 'mymachine.com:3900'). 'network_password' is the challenge
    * password string needed to talk with the machines on the network.
+   * 
+   * @param p
+   * @return 
+   * @throws java.io.IOException
    */
   public static MckoiDDBClient connectTCP(Properties p) throws IOException {
 
@@ -142,6 +159,25 @@ public class MckoiDDBClientUtils {
     }
     if (net_password == null) {
       throw new RuntimeException("'network_password' property not found.");
+    }
+
+    // The network interface for IPv6 loop-link,
+    String out_net_interface = p.getProperty("net_interface");
+    NetworkInterface out_net_if = null;
+    if (out_net_interface != null) {
+      // Turn it into a NetworkInterface
+      out_net_if = NetworkInterface.getByName(out_net_interface);
+      if (out_net_if == null) {
+        String err_msg = MessageFormat.format(
+            "'net_interface' property is not a valid network interface: {0}",
+            out_net_interface);
+        throw new RuntimeException(err_msg);
+      }
+    }
+    else {
+      // PENDING: Put this warning into a log rather than print to console?
+      System.out.println("WARNING: no 'net_interface' property in client.conf.");
+      System.out.println("  This means link-local IPv6 will not work.");
     }
 
     // Get the type of connection,
@@ -214,8 +250,8 @@ public class MckoiDDBClientUtils {
     // Direct client connect
     if (connect_type.equals("direct")) {
 
-      return connectTCP(manager_servers, net_password, introduced_latency,
-                        net_cache, transaction_node_cache);
+      return connectTCP(manager_servers, net_password, out_net_if,
+                        introduced_latency, net_cache, transaction_node_cache);
 
     }
 
@@ -436,34 +472,36 @@ public class MckoiDDBClientUtils {
     /**
      * An artifical latency component used for simulating network latency.
      */
-    private int artifical_latency;
+    private final int artifical_latency;
 
-//    /**
-//     * Default, constructor.
-//     */
-//    TCPMckoiDDBClient(ServiceAddress[] manager_servers,
-//                      String network_password) {
-//      super(manager_servers, network_password);
-//      this.artifical_latency = 0;
-//    }
+    /**
+     * Connector properties.
+     */
+    private final TCPConnectorValues properties;
 
     /**
      * Node cache constructor.
      */
     TCPMckoiDDBClient(ServiceAddress[] manager_servers,
-                      String network_password, int artifical_latency,
+                      String network_password,
+                      NetworkInterface output_net_interface,
+                      int artifical_latency,
                       LocalNetworkCache lnc,
                       long max_transaction_node_heap_size) {
       super(manager_servers, network_password, lnc,
             max_transaction_node_heap_size);
+
+      properties = new TCPConnectorValues(
+                                      network_password, output_net_interface);
       this.artifical_latency = artifical_latency;
+
     }
 
     /**
      * Connects this client to the network.
      */
     public void connect() {
-      this.tcp_connector = new TCPNetworkConnector(getNetworkPassword());
+      this.tcp_connector = new TCPNetworkConnector(properties);
       this.tcp_connector.setCommLatency(artifical_latency);
       super.connectNetwork(tcp_connector);
     }
@@ -474,7 +512,7 @@ public class MckoiDDBClientUtils {
 
 
 
-  static class TCPProxyMckoiDDBClient extends TCPMckoiDDBClient {
+  static class TCPProxyMckoiDDBClient extends MckoiDDBClient {
 
     /**
      * The TCP proxy connector used to talk with the network.
@@ -493,8 +531,9 @@ public class MckoiDDBClientUtils {
                                 int artifical_latency,
                                 LocalNetworkCache lnc,
                                 long max_transaction_node_heap_size) {
-      super(manager_servers, network_password, artifical_latency,
+      super(manager_servers, network_password,
             lnc, max_transaction_node_heap_size);
+      // PENDING: Handle artifical_latency,
       this.proxy_host = proxy_host;
       this.proxy_port = proxy_port;
     }
@@ -502,7 +541,6 @@ public class MckoiDDBClientUtils {
     /**
      * Connects this client to the network.
      */
-    @Override
     public void connect() {
       this.proxy_connector = new TCPProxyNetworkConnector(getNetworkPassword());
       this.proxy_connector.connect(proxy_host, proxy_port);
@@ -511,7 +549,7 @@ public class MckoiDDBClientUtils {
 
   }
 
-  static class ProxyMckoiDDBClient extends TCPMckoiDDBClient {
+  static class ProxyMckoiDDBClient extends MckoiDDBClient {
 
     /**
      * The proxy connector used to talk with the network.
@@ -530,8 +568,9 @@ public class MckoiDDBClientUtils {
                                int artifical_latency,
                                LocalNetworkCache lnc,
                                long max_transaction_node_heap_size) {
-      super(manager_servers, network_password, artifical_latency,
+      super(manager_servers, network_password,
             lnc, max_transaction_node_heap_size);
+      // PENDING: Handle artifical_latency,
       this.in = in;
       this.out = out;
     }
@@ -539,7 +578,6 @@ public class MckoiDDBClientUtils {
     /**
      * Connects this client to the network.
      */
-    @Override
     public void connect() {
       this.proxy_connector = new ProxyNetworkConnector(getNetworkPassword());
       this.proxy_connector.connect(in, out);

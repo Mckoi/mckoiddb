@@ -19,18 +19,18 @@ resources associated with MckoiDDB.
 License
 =======
 
-MckoiDDB is released under the GPL version 3 open source license.
-See LICENSE.txt for details of the license. If the license is not
-present in this distribution, please go to http://www.mckoi.com/
-and download an official distribution to receive a copy of the
-license.
+MckoiDDB is released under the Apache License version 2 open source
+license. See LICENSE.txt for details of the license. If the license
+is not present in this distribution, please go to
+http://www.mckoi.com/ and download an official distribution to receive
+a copy of the license.
 
 
 Requirements
 ============
 
-MckoiDDB requires Java 1.6 to run and build. Other than requiring
-Java 1.6, MckoiDDB has no dependencies on any other external
+MckoiDDB requires Java 1.7 to run and build. Other than requiring
+Java 1.7, MckoiDDB has no dependencies on any other external
 libraries.
 
 
@@ -42,7 +42,6 @@ The important files and directories in this distribution are;
 demo/        Demonstrations from the documentation.
 lib/         Precompiled Binaries.
 src/         The source directory.
-LICENSE.html The license of the software in HTML format.
 LICENSE.txt  The license of the software in plain text format.
 README       This file.
 COPYRIGHT    The MckoiDDB copyright message.

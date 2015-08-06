@@ -1,26 +1,18 @@
-/**
- * com.mckoi.odb.util.FileSystemImpl  May 16, 2010
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.odb.util;
@@ -788,107 +780,107 @@ public class FileSystemImpl implements FileSystem {
   }
 
 
-  /**
-   * Uploads a local file into the database if it is different that the file
-   * stored. 'remote_file' is the name to call the file remotely. Note that the
-   * 'lastmodified' property is taken from the time the file was uploaded.
-   * <p>
-   * If the local file is the same, no upload takes place.
-   */
-  @Override
-  public boolean synchronizeFile(InputStream file_in1,
-          long local_file_len, long local_modified_time, String mime_type,
-                                     String remote_file) throws IOException {
-
-    // Invalidation check,
-    checkInvalidated();
-
-    // Check the remote_file is valid,
-    checkValidDBFile(remote_file);
-
-//    ODBTransaction t = getTransaction();
-
-    // Determine if we skip or not,
-    boolean skip = false;
-    FileInfo file_info = getFileInfo(remote_file);
-    if (file_info != null) {
-      long mod_long = file_info.getLastModified();
-      // If the file is significantly different (allow for rounding
-      // differences),
-      if (local_modified_time < (mod_long + 500) &&
-          local_modified_time > (mod_long - 500)) {
-        // Comare the file size,
-        DataFile file_df = file_info.getDataFile();
-        if (file_df.size() == local_file_len) {
-          // File sizes are the same, so skip this file,
-          skip = true;
-        }
-      }
-    }
-
-    // Do we skip? (only true if there's a file with the same name, size and
-    // timestamp).
-    if (!skip) {
-
-      // If file_info is null, create the file,
-      if (file_info == null) {
-        createFile(remote_file, mime_type, local_modified_time);
-        file_info = getFileInfo(remote_file);
-      }
-      // Otherwise update the existing file info,
-      else {
-        updateFileInfo(remote_file, mime_type, local_modified_time);
-      }
-
-      // Perform the copy,
-      DataFile remote_dfile = file_info.getDataFile();
-      // Clean it,
-      remote_dfile.delete();
-      // Write the content
-      BufferedInputStream bin = new BufferedInputStream(file_in1);
-      byte[] buf = new byte[2048];
-      while (true) {
-        int read_count = bin.read(buf, 0, buf.length);
-        if (read_count == -1) {
-          break;
-        }
-        remote_dfile.put(buf, 0, read_count);
-      }
-
-      // File copied, so return true
-      return true;
-
-    }
-
-    // No copy necessary, so return false
-    return false;
-  }
-
-  /**
-   * Uploads a local file into the database if it is different that the file
-   * stored. 'remote_file' is the name to call the file remotely. Note that the
-   * 'lastmodified' property is taken from the time the file was uploaded.
-   * <p>
-   * If the local file is the same, no upload takes place.
-   */
-  public boolean synchronizeFile(File local_file, String remote_file)
-                                                          throws IOException {
-
-    // Invalidation check,
-    checkInvalidated();
-
-    // Get the mime type for the local file,
-    URL file_url = local_file.toURI().toURL();
-    URLConnection c = file_url.openConnection();
-    String mime_type = c.getContentType();
-
-    FileInputStream fin = new FileInputStream(local_file);
-
-    return synchronizeFile(fin,
-            local_file.length(), local_file.lastModified(),
-            mime_type, remote_file);
-
-  }
+//  /**
+//   * Uploads a local file into the database if it is different that the file
+//   * stored. 'remote_file' is the name to call the file remotely. Note that the
+//   * 'lastmodified' property is taken from the time the file was uploaded.
+//   * <p>
+//   * If the local file is the same, no upload takes place.
+//   */
+//  @Override
+//  public boolean synchronizeFile(InputStream file_in1,
+//          long local_file_len, long local_modified_time, String mime_type,
+//                                     String remote_file) throws IOException {
+//
+//    // Invalidation check,
+//    checkInvalidated();
+//
+//    // Check the remote_file is valid,
+//    checkValidDBFile(remote_file);
+//
+////    ODBTransaction t = getTransaction();
+//
+//    // Determine if we skip or not,
+//    boolean skip = false;
+//    FileInfo file_info = getFileInfo(remote_file);
+//    if (file_info != null) {
+//      long mod_long = file_info.getLastModified();
+//      // If the file is significantly different (allow for rounding
+//      // differences),
+//      if (local_modified_time < (mod_long + 500) &&
+//          local_modified_time > (mod_long - 500)) {
+//        // Comare the file size,
+//        DataFile file_df = file_info.getDataFile();
+//        if (file_df.size() == local_file_len) {
+//          // File sizes are the same, so skip this file,
+//          skip = true;
+//        }
+//      }
+//    }
+//
+//    // Do we skip? (only true if there's a file with the same name, size and
+//    // timestamp).
+//    if (!skip) {
+//
+//      // If file_info is null, create the file,
+//      if (file_info == null) {
+//        createFile(remote_file, mime_type, local_modified_time);
+//        file_info = getFileInfo(remote_file);
+//      }
+//      // Otherwise update the existing file info,
+//      else {
+//        updateFileInfo(remote_file, mime_type, local_modified_time);
+//      }
+//
+//      // Perform the copy,
+//      DataFile remote_dfile = file_info.getDataFile();
+//      // Clean it,
+//      remote_dfile.delete();
+//      // Write the content
+//      BufferedInputStream bin = new BufferedInputStream(file_in1);
+//      byte[] buf = new byte[2048];
+//      while (true) {
+//        int read_count = bin.read(buf, 0, buf.length);
+//        if (read_count == -1) {
+//          break;
+//        }
+//        remote_dfile.put(buf, 0, read_count);
+//      }
+//
+//      // File copied, so return true
+//      return true;
+//
+//    }
+//
+//    // No copy necessary, so return false
+//    return false;
+//  }
+//
+//  /**
+//   * Uploads a local file into the database if it is different that the file
+//   * stored. 'remote_file' is the name to call the file remotely. Note that the
+//   * 'lastmodified' property is taken from the time the file was uploaded.
+//   * <p>
+//   * If the local file is the same, no upload takes place.
+//   */
+//  public boolean synchronizeFile(File local_file, String remote_file)
+//                                                          throws IOException {
+//
+//    // Invalidation check,
+//    checkInvalidated();
+//
+//    // Get the mime type for the local file,
+//    URL file_url = local_file.toURI().toURL();
+//    URLConnection c = file_url.openConnection();
+//    String mime_type = c.getContentType();
+//
+//    FileInputStream fin = new FileInputStream(local_file);
+//
+//    return synchronizeFile(fin,
+//            local_file.length(), local_file.lastModified(),
+//            mime_type, remote_file);
+//
+//  }
 
   /**
    * Create a FileInfo object given a meta object that references a 'f.*'
@@ -1092,6 +1084,11 @@ public class FileSystemImpl implements FileSystem {
     // Invalidation check,
     checkInvalidated();
 
+    checkValidDBPath(path_name_current);
+    checkValidDBPath(path_name_new);
+
+    
+
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -1226,138 +1223,138 @@ public class FileSystemImpl implements FileSystem {
     return true;
   }
 
-  /**
-   * Recursively descends through a directory hierarchy uploading any files
-   * it finds to the remote location.
-   */
-  public void uploadFromLocalDirectoryTo(PrintStream msg_out,
-                           File local_dir,
-                           String repository_path) throws IOException {
+//  /**
+//   * Recursively descends through a directory hierarchy uploading any files
+//   * it finds to the remote location.
+//   */
+//  public void uploadFromLocalDirectoryTo(PrintStream msg_out,
+//                           File local_dir,
+//                           String repository_path) throws IOException {
+//
+//    // Invalidation check,
+//    checkInvalidated();
+//
+////    String remote_file_path = "/apps/" + app_context_name + "/";
+//
+//    recurseUpload(msg_out, local_dir, repository_path); //remote_file_path);
+//
+//  }
 
-    // Invalidation check,
-    checkInvalidated();
-
-//    String remote_file_path = "/apps/" + app_context_name + "/";
-
-    recurseUpload(msg_out, local_dir, repository_path); //remote_file_path);
-
-  }
 
 
+//  private void recurseUpload(PrintStream msg_out,
+//                            File local_dir,
+//                            String remote_file_path) throws IOException {
+//
+//    File[] files = local_dir.listFiles();
+//    for (File f : files) {
+//
+//      if (f.isDirectory()) {
+//        recurseUpload(msg_out, f,
+//                      remote_file_path + f.getName() + "/");
+//      }
+//      else {
+//        // Upload the file,
+//        // Check it doesn't escape from the current directory,
+//        if (!checkFileValid(f)) {
+//          throw new FileSystemException("Invalid file: {0}", f.getName());
+//        }
+//
+//        String file_name = f.getName();
+//
+//        // Find the mime_type for the given file name
+//        String mime_type = FileUtilities.findMimeType(file_name);
+//        // Get the size of the entry,
+//        long size = f.length();
+//        // The modified type of the entry,
+//        long modified_time = f.lastModified();
+//
+//        // The remote file name,
+//        String remote_file_name = remote_file_path + file_name;
+//
+//        // The input stream of the file
+//        InputStream fin = new BufferedInputStream(new FileInputStream(f));
+//
+//        // Sync the file,
+//        boolean synched =
+//                synchronizeFile(fin, size, modified_time, mime_type,
+//                                remote_file_name);
+//
+//        if (msg_out != null) {
+//          if (synched) {
+//            msg_out.println("WROTE: " + remote_file_name);
+//          }
+//          else {
+//            msg_out.println("SKIPPED: " + remote_file_name);
+//          }
+//        }
+//
+//      }
+//    }
+//
+//  }
 
-  private void recurseUpload(PrintStream msg_out,
-                            File local_dir,
-                            String remote_file_path) throws IOException {
-
-    File[] files = local_dir.listFiles();
-    for (File f : files) {
-
-      if (f.isDirectory()) {
-        recurseUpload(msg_out, f,
-                      remote_file_path + f.getName() + "/");
-      }
-      else {
-        // Upload the file,
-        // Check it doesn't escape from the current directory,
-        if (!checkFileValid(f)) {
-          throw new FileSystemException("Invalid file: {0}", f.getName());
-        }
-
-        String file_name = f.getName();
-
-        // Find the mime_type for the given file name
-        String mime_type = FileUtilities.findMimeType(file_name);
-        // Get the size of the entry,
-        long size = f.length();
-        // The modified type of the entry,
-        long modified_time = f.lastModified();
-
-        // The remote file name,
-        String remote_file_name = remote_file_path + file_name;
-
-        // The input stream of the file
-        InputStream fin = new BufferedInputStream(new FileInputStream(f));
-
-        // Sync the file,
-        boolean synched =
-                synchronizeFile(fin, size, modified_time, mime_type,
-                                remote_file_name);
-
-        if (msg_out != null) {
-          if (synched) {
-            msg_out.println("WROTE: " + remote_file_name);
-          }
-          else {
-            msg_out.println("SKIPPED: " + remote_file_name);
-          }
-        }
-
-      }
-    }
-
-  }
-
-  /**
-   * Uploads a .war formatted InputStream into the repository. If the .war
-   * file doesn't exist in the repository then it is copied. If the .war
-   * file does exist, a binary comparison is performed between the data on the
-   * input stream and currently stored, and only the changed files are
-   * uploaded.
-   */
-  public void uploadWarApp(PrintStream msg_out,
-                           InputStream war_stream,
-                           String app_context_name) throws IOException {
-
-    // Invalidation check,
-    checkInvalidated();
-
-//    FileNameMap fileNameMap = URLConnection.getFileNameMap();
-    // As a .JAR stream,
-    JarInputStream jin = new JarInputStream(war_stream);
-    JarEntry entry = jin.getNextJarEntry();
-
-    while (entry != null) {
-      String file_name = entry.getName();
-
-      // Ignore any entries ending in '/' (these are directory entries).
-      if (!file_name.endsWith("/")) {
-        // Turn it into a file object,
-        File f = new File(file_name);
-        // Check it doesn't escape from the current directory,
-        if (!checkFileValid(f)) {
-          throw new FileSystemException("Invalid file: {0}", f.getName());
-        }
-
-        // Find the mime_type for the given file name
-//        String mime_type = fileNameMap.getContentTypeFor(file_name);
-        String mime_type = FileUtilities.findMimeType(file_name);
-        // Get the size of the entry,
-        long size = entry.getSize();
-        // The modified type of the entry,
-        long modified_time = entry.getTime();
-
-        // The remote file name,
-        String remote_file_name = "/apps/" + app_context_name + "/" + file_name;
-
-        // Sync the file,
-        boolean synched =
-                synchronizeFile(jin, size, modified_time, mime_type,
-                                remote_file_name);
-
-        if (msg_out != null) {
-          if (synched) {
-            msg_out.println("WROTE: " + remote_file_name);
-          }
-          else {
-            msg_out.println("SKIPPED: " + remote_file_name);
-          }
-        }
-
-      }
-
-      entry = jin.getNextJarEntry();
-    }
-  }
+//  /**
+//   * Uploads a .war formatted InputStream into the repository. If the .war
+//   * file doesn't exist in the repository then it is copied. If the .war
+//   * file does exist, a binary comparison is performed between the data on the
+//   * input stream and currently stored, and only the changed files are
+//   * uploaded.
+//   */
+//  public void uploadWarApp(PrintStream msg_out,
+//                           InputStream war_stream,
+//                           String app_context_name) throws IOException {
+//
+//    // Invalidation check,
+//    checkInvalidated();
+//
+////    FileNameMap fileNameMap = URLConnection.getFileNameMap();
+//    // As a .JAR stream,
+//    JarInputStream jin = new JarInputStream(war_stream);
+//    JarEntry entry = jin.getNextJarEntry();
+//
+//    while (entry != null) {
+//      String file_name = entry.getName();
+//
+//      // Ignore any entries ending in '/' (these are directory entries).
+//      if (!file_name.endsWith("/")) {
+//        // Turn it into a file object,
+//        File f = new File(file_name);
+//        // Check it doesn't escape from the current directory,
+//        if (!checkFileValid(f)) {
+//          throw new FileSystemException("Invalid file: {0}", f.getName());
+//        }
+//
+//        // Find the mime_type for the given file name
+////        String mime_type = fileNameMap.getContentTypeFor(file_name);
+//        String mime_type = FileUtilities.findMimeType(file_name);
+//        // Get the size of the entry,
+//        long size = entry.getSize();
+//        // The modified type of the entry,
+//        long modified_time = entry.getTime();
+//
+//        // The remote file name,
+//        String remote_file_name = "/apps/" + app_context_name + "/" + file_name;
+//
+//        // Sync the file,
+//        boolean synched =
+//                synchronizeFile(jin, size, modified_time, mime_type,
+//                                remote_file_name);
+//
+//        if (msg_out != null) {
+//          if (synched) {
+//            msg_out.println("WROTE: " + remote_file_name);
+//          }
+//          else {
+//            msg_out.println("SKIPPED: " + remote_file_name);
+//          }
+//        }
+//
+//      }
+//
+//      entry = jin.getNextJarEntry();
+//    }
+//  }
 
   /**
    * {@inheritDoc}

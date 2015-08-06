@@ -1,26 +1,18 @@
-/**
- * com.mckoi.runtime.MckoiMachineNode  Dec 20, 2008
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- * 
- * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.runtime;
@@ -96,6 +88,10 @@ public class MckoiMachineNode {
         pout.println("Error, no node configuration file given.");
         failed = true;
       }
+      if (host_arg == null) {
+        pout.println("Error, no host (bind address) given.");
+        failed = true;
+      }
       if (port_arg == null) {
         pout.println("Error, no port address given.");
         failed = true;
@@ -113,7 +109,7 @@ public class MckoiMachineNode {
         System.out.println("  The network configuration file (default: network.conf).");
         System.out.println("-host [host]");
         System.out.println("  The interface address to bind the socket on the local");
-        System.out.println("  machine (optional - if not given binds to all interfaces)");
+        System.out.println("  machine.");
         System.out.println("-port [port]");
         System.out.println("  The port to bind the socket.");
         System.out.println();
@@ -132,12 +128,8 @@ public class MckoiMachineNode {
 
         // The base path,
         InetAddress host;
-        if (host_arg != null) {
-          host = InetAddress.getByName(host_arg);
-        }
-        else {
-          host = null;
-        }
+        if (host_arg == null) throw new NullPointerException();
+        host = InetAddress.getByName(host_arg);
 
         int port;
         try {
@@ -148,11 +140,9 @@ public class MckoiMachineNode {
           return;
         }
 
-        if (host_arg != null) {
-          host_arg = host_arg + " ";
-        }
-        System.out.println("Machine Node, " + (host_arg != null ? host_arg : "") +
-                            "port: " + port_arg);
+        host_arg = host_arg + " ";
+        System.out.println("Machine Node, " + host_arg +
+                           "port: " + port_arg);
         TCPInstanceAdminServer inst =
               new TCPInstanceAdminServer(net_config_resource,
                                          host, port, node_config_resource);

@@ -1,32 +1,26 @@
-/**
- * com.mckoi.network.TCPInstanceProxyServer  Jul 18, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
 
 import java.io.*;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -58,6 +52,11 @@ public class TCPInstanceProxyServer implements Runnable {
   private final int port;
 
   /**
+   * The NetworkInterface upon which we use to connect to the Mckoi DDB network.
+   */
+  private final NetworkInterface out_network_interface;
+
+  /**
    * The thread pool.
    */
   private final ExecutorService thread_pool;
@@ -69,13 +68,30 @@ public class TCPInstanceProxyServer implements Runnable {
 
   /**
    * Constructs the instance server.
+   * 
+   * @param bind_address the address to bind the proxy server to.
+   * @param port the port to bind the proxy server to.
+   * @param out_network_interface the output network interface.
    */
-  public TCPInstanceProxyServer(InetAddress bind_address, int port) {
+  public TCPInstanceProxyServer(InetAddress bind_address, int port,
+                                NetworkInterface out_network_interface) {
 
     this.log = Logger.getLogger("com.mckoi.network.Log");
 
     this.bind_interface = bind_address;
     this.port = port;
+    this.out_network_interface = out_network_interface;
+
+    if (bind_interface != null) {
+      if (bind_interface instanceof Inet6Address &&
+          bind_interface.isLinkLocalAddress()) {
+        Inet6Address ipv6_addr = (Inet6Address) bind_interface;
+        NetworkInterface net_if = ipv6_addr.getScopedInterface();
+        if (net_if == null) {
+          throw new IllegalStateException("Link local IPv6 address must have a scope id.");
+        }
+      }
+    }
 
     // The thread pool for servicing client requests,
     thread_pool = Executors.newCachedThreadPool();
@@ -161,8 +177,10 @@ public class TCPInstanceProxyServer implements Runnable {
         final String net_password = din.readUTF();
 
         // The connector to proxy commands via,
+        TCPConnectorValues properties =
+                  new TCPConnectorValues(net_password, out_network_interface);
         final TCPNetworkConnector connector =
-                                         new TCPNetworkConnector(net_password);
+                                         new TCPNetworkConnector(properties);
 
         // The rest of the communication will be command requests;
         while (true) {

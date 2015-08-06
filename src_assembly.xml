@@ -16,7 +16,7 @@
       <outputDirectory>/</outputDirectory>
       <includes>
         <include>pom.xml</include>
-        <include>gpl_assembly.xml</include>
+        <include>bin_assembly.xml</include>
         <include>src_assembly.xml</include>
       </includes>
     </fileSet>

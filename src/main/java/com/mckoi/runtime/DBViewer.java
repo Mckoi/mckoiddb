@@ -1,26 +1,18 @@
-/**
- * tests.SDBViewer_TODELETE  Jul 12, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.runtime;
@@ -102,38 +94,43 @@ public class DBViewer {
 
       }
       else {
-        // Open the connect interface,
 
-        final LoginPanel login_panel = new LoginPanel();
-        final JFrame login_frame = new JFrame("Simple Database Viewer Connect");
-        Container c = login_frame.getContentPane();
-        c.setLayout(new BorderLayout());
-        c.add(login_panel, BorderLayout.CENTER);
+        System.out.println("com.mckoi.runtime.DBViewer");
+        System.out.println();
+        System.out.println("Syntax: DBViewer [location of client.conf]");
 
-        login_frame.addWindowListener(new WindowAdapter() {
-          @Override
-          public void windowClosing(WindowEvent evt) {
-            login_frame.dispose();
-            System.exit(0);
-          }
-        });
-        login_panel.addExitActionListener(new ActionListener() {
-          @Override
-          public void actionPerformed(ActionEvent evt) {
-            login_frame.dispose();
-            System.exit(0);
-          }
-        });
-        login_panel.addConnectActionListener(new ActionListener() {
-          @Override
-          public void actionPerformed(ActionEvent evt) {
-            tryConnect(login_frame, login_panel);
-          }
-        });
-
-        login_frame.pack();
-        login_frame.setVisible(true);
-        login_frame.setLocationRelativeTo(null);
+//        // Open the connect interface,
+//
+//        final LoginPanel login_panel = new LoginPanel();
+//        final JFrame login_frame = new JFrame("Simple Database Viewer Connect");
+//        Container c = login_frame.getContentPane();
+//        c.setLayout(new BorderLayout());
+//        c.add(login_panel, BorderLayout.CENTER);
+//
+//        login_frame.addWindowListener(new WindowAdapter() {
+//          @Override
+//          public void windowClosing(WindowEvent evt) {
+//            login_frame.dispose();
+//            System.exit(0);
+//          }
+//        });
+//        login_panel.addExitActionListener(new ActionListener() {
+//          @Override
+//          public void actionPerformed(ActionEvent evt) {
+//            login_frame.dispose();
+//            System.exit(0);
+//          }
+//        });
+//        login_panel.addConnectActionListener(new ActionListener() {
+//          @Override
+//          public void actionPerformed(ActionEvent evt) {
+//            tryConnect(login_frame, login_panel);
+//          }
+//        });
+//
+//        login_frame.pack();
+//        login_frame.setVisible(true);
+//        login_frame.setLocationRelativeTo(null);
       }
 
     }
@@ -144,73 +141,64 @@ public class DBViewer {
   }
 
 
-  private static void tryConnect(
-                     final JFrame login_frame, final LoginPanel login_panel) {
-    try {
-      // Test the args,
-      String manager = login_panel.getManagerServerField();
-      String net_pass = login_panel.getNetworkPasswordField();
-
-      if (manager == null || manager.equals("")) {
-        JOptionPane.showMessageDialog(login_frame,
-                                      "Manager server address is empty.");
-        return;
-      }
-      if (net_pass == null || net_pass.equals("")) {
-        JOptionPane.showMessageDialog(login_frame,
-                                      "Network password is empty.");
-        return;
-      }
-
-      ServiceAddress MANAGER;
-      try {
-        MANAGER = ServiceAddress.parseString(manager);
-      }
-      catch (Throwable e) {
-        JOptionPane.showMessageDialog(login_frame,
-                           "Manager server address error: " + e.getMessage());
-        e.printStackTrace(System.err);
-        return;
-      }
-
-      MckoiDDBClient client;
-      // This is a direct connection,
-      try {
-        ServiceAddress[] managers = new ServiceAddress[] { MANAGER };
-        MckoiDDBClient tcp_client =
-                           MckoiDDBClientUtils.connectTCP(managers, net_pass);
-        client = tcp_client;
-      }
-      catch (Throwable e) {
-        JOptionPane.showMessageDialog(login_frame,
-                           "Unable to connect to network: " + e.getMessage());
-        e.printStackTrace(System.err);
-        return;
-      }
-
-//      String NET_PWD = "tl_01";
-//      ServiceAddress MANAGER = ServiceAddress.parseString("192.168.130.118:3500");
-////      InetAddress proxy_address = InetAddress.getByName("127.0.0.1");
-//      InetAddress proxy_address = InetAddress.getByName("72.14.177.162");
-//      int proxy_port = 3999;
-//      MckoiDDBClient client =
-//              MckoiDDBClientUtils.connectProxyTCP(proxy_address, proxy_port,
-//                                                  MANAGER, NET_PWD);
-
-      // Everything good so far, so dispose the login frame and open the
-      // viewer frame.
-
-      // Dispose the login frame,
-      login_frame.dispose();
-
-      openViewerWindow(client);
-
-
-    }
-    catch (Throwable e) {
-      e.printStackTrace(System.err);
-    }
-  }
+//  private static void tryConnect(
+//                     final JFrame login_frame, final LoginPanel login_panel) {
+//    try {
+//      // Test the args,
+//      String manager = login_panel.getManagerServerField();
+//      String net_pass = login_panel.getNetworkPasswordField();
+//
+//      if (manager == null || manager.equals("")) {
+//        JOptionPane.showMessageDialog(login_frame,
+//                                      "Manager server address is empty.");
+//        return;
+//      }
+//      if (net_pass == null || net_pass.equals("")) {
+//        JOptionPane.showMessageDialog(login_frame,
+//                                      "Network password is empty.");
+//        return;
+//      }
+//
+//      ServiceAddress MANAGER;
+//      try {
+//        MANAGER = ServiceAddress.parseString(manager);
+//      }
+//      catch (Throwable e) {
+//        JOptionPane.showMessageDialog(login_frame,
+//                           "Manager server address error: " + e.getMessage());
+//        e.printStackTrace(System.err);
+//        return;
+//      }
+//
+//      MckoiDDBClient client;
+//      // This is a direct connection,
+//      try {
+//        ServiceAddress[] managers = new ServiceAddress[] { MANAGER };
+//        MckoiDDBClient tcp_client =
+//                           MckoiDDBClientUtils.connectTCP(managers, net_pass);
+//        client = tcp_client;
+//      }
+//      catch (Throwable e) {
+//        JOptionPane.showMessageDialog(login_frame,
+//                           "Unable to connect to network: " + e.getMessage());
+//        e.printStackTrace(System.err);
+//        return;
+//      }
+//
+//      // Everything good so far, so dispose the login frame and open the
+//      // viewer frame.
+//
+//      // Dispose the login frame,
+//      login_frame.dispose();
+//
+//      openViewerWindow(client);
+//
+//
+//    }
+//    catch (Throwable e) {
+//      e.printStackTrace(System.err);
+//    }
+//  }
 
 
   private static void openViewerWindow(MckoiDDBAccess client) {
@@ -303,27 +291,5 @@ public class DBViewer {
 
 
   }
-
-
-  // ---------- Inner classes ----------
-
-
-
-//  static class UnknownPathNode extends DefaultMutableTreeNode {
-//
-//    /**
-//     * Constructs the Simple Database path node.
-//     */
-//    public UnknownPathNode(String path_name) {
-//      super(path_name);
-//    }
-//
-//    @Override
-//    public boolean isLeaf() {
-//      return false;
-//    }
-//
-//  }
-
 
 }

@@ -1,40 +1,37 @@
-/**
- * com.mckoi.network.TCPNetworkConnector  Dec 1, 2008
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- * 
- * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
 
 import java.io.*;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.security.AccessController;
 import java.security.PrivilegedActionException;
 import java.security.PrivilegedExceptionAction;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -61,6 +58,11 @@ class TCPNetworkConnector implements NetworkConnector {
   private final HashMap<ServiceAddress, TCPConnection> connection_pool;
 
   /**
+   * The NetworkInterface that we use to make connections.
+   */
+  private final NetworkInterface network_interface;
+
+  /**
    * The network password used to connect to the services.
    */
   private String password;
@@ -73,9 +75,14 @@ class TCPNetworkConnector implements NetworkConnector {
 
 
   /**
-   * Constructor.
+   * Constructor. The properties specifies how the connector should be
+   * configured. The properties to include are;
+   * 
+   * 'network_password' -> (String) the network password
+   * 'output_net_interface' -> (NetworkInterface) the output network interface
+   *     to use for IPv6 scope.
    */
-  TCPNetworkConnector(String password) {
+  TCPNetworkConnector(TCPConnectorValues properties) {
 
     // Security check,
     SecurityManager security = System.getSecurityManager();
@@ -83,7 +90,8 @@ class TCPNetworkConnector implements NetworkConnector {
          security.checkPermission(MckoiNetworkPermission.CREATE_TCP_CONNECTOR);
 
     connection_pool = new HashMap();
-    this.password = password;
+    this.password = properties.getNetworkPassword();
+    this.network_interface = properties.getOutputNetworkInterface();
 
     // This thread kills connections that have timed out.
     background_thread = new ConnectionDestroyThread(log, connection_pool);
@@ -107,7 +115,7 @@ class TCPNetworkConnector implements NetworkConnector {
       // If there isn't, establish a connection,
       if (c == null) {
         c = new TCPConnection();
-        c.connect(password, address);
+        c.connect(password, network_interface, address);
         connection_pool.put(address, c);
       }
       else {
@@ -231,7 +239,8 @@ class TCPNetworkConnector implements NetworkConnector {
       last_lock_timestamp = System.currentTimeMillis();
     }
 
-    void connect(String password, final ServiceAddress addr)
+    void connect(String password,
+            final NetworkInterface network_interface, final ServiceAddress addr)
                                                            throws IOException {
 
       // Creating the socket connection is a privileged operation because it
@@ -241,7 +250,50 @@ class TCPNetworkConnector implements NetworkConnector {
         AccessController.doPrivileged(new PrivilegedExceptionAction() {
           @Override
           public Object run() throws IOException {
-            s = new Socket(addr.asInetAddress(), addr.getPort());
+            InetAddress iaddr = addr.asInetAddress();
+
+            // IPv6 addresses must have a scope id if they are link local. We
+            // assign a network interface to all IPv6 addresses here.
+
+            // If it's an ipv6,
+            if (iaddr instanceof Inet6Address) {
+              Inet6Address i6addr = (Inet6Address) iaddr;
+              NetworkInterface current_interface = i6addr.getScopedInterface();
+              // If it has no scope id,
+              if (current_interface == null) {
+                if (network_interface == null) {
+                  // If no network interface, then throw an error only if it's a
+                  // link local address,
+                  if (i6addr.isLinkLocalAddress()) {
+                    String err_msg = MessageFormat.format(
+                        "Attempting to connect to link local '{0}' with no network interface specified.", i6addr);
+                    throw new IOException(err_msg);
+                  }
+                  // IP address is not link local and so does not need a
+                  // network scope. Good to go!
+                }
+                else { // network_interface != null
+                  // Give the IP address the specified scope,
+                  // Make an Inet6Address with the network interface scope,
+                  // The must happen for link local IPv6 addresses.
+                  iaddr = Inet6Address.getByAddress(
+                            null, i6addr.getAddress(), network_interface);
+                }
+              }
+              else {
+                // Otherwise throw an error if we tried to connect on an
+                // interface that's not the same as the interface specified.
+                // Check the scopes are the same,
+                if (network_interface != null &&
+                    !current_interface.equals(network_interface)) {
+                  throw new IOException(
+                      "Trying to connect to an interface that's different " +
+                      "than the output_net_interface specified.");
+                }
+              }
+            }
+
+            s = new Socket(iaddr, addr.getPort());
             return null;
           }
         });

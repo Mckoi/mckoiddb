@@ -1,26 +1,18 @@
-/**
- * com.mckoi.network.NetworkProfile  Jul 4, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
@@ -28,6 +20,7 @@ package com.mckoi.network;
 import com.mckoi.data.NodeReference;
 import com.mckoi.util.StringUtil;
 import java.io.IOException;
+import java.net.NetworkInterface;
 import java.util.*;
 
 /**
@@ -812,6 +805,38 @@ public class NetworkProfile implements NetworkAccess {
         throw new NetworkAdminException(m);
       }
     }
+
+    // Now register any existing block and root servers in the network with
+    // this manager ignoring any errors produced.
+
+    MachineProfile[] current_blocks = getBlockServers();
+    MachineProfile[] current_roots = getRootServers();
+
+    for (int i = 0; i < current_roots.length; ++i) {
+      MessageStream msg_udt = new MessageStream(7);
+      msg_udt.addMessage("registerRootServer");
+      msg_udt.addServiceAddress(current_roots[i].getServiceAddress());
+      msg_udt.closeMessage();
+      Message m =
+              commandManager(manager, msg_udt);
+      if (m.isError()) {
+        // Ignore, but report,
+        System.err.println("Failed to register root server with new manager: " + m.getErrorMessage());
+      }
+    }
+    for (int i = 0; i < current_blocks.length; ++i) {
+      MessageStream msg_udt = new MessageStream(7);
+      msg_udt.addMessage("registerBlockServer");
+      msg_udt.addServiceAddress(current_blocks[i].getServiceAddress());
+      msg_udt.closeMessage();
+      Message m =
+              commandManager(manager, msg_udt);
+      if (m.isError()) {
+        // Ignore, but report,
+        System.err.println("Failed to register block server with new manager: " + m.getErrorMessage());
+      }
+    }
+
   }
 
   /**
@@ -1813,11 +1838,17 @@ public class NetworkProfile implements NetworkAccess {
   /**
    * Creates a NetworkProfile in which requests are connected via a TCP
    * connection for the service.
+   * 
+   * @param connector_properties
+   * @return 
    */
-  public static NetworkProfile tcpConnect(String network_password) {
-    NetworkConnector connector = new TCPNetworkConnector(network_password);
+  public static NetworkProfile tcpConnect(TCPConnectorValues connector_properties) {
+
+    NetworkConnector connector = new TCPNetworkConnector(connector_properties);
     NetworkProfile network_profile =
-                               new NetworkProfile(connector, network_password);
+            new NetworkProfile(connector,
+                               connector_properties.getNetworkPassword());
+
     return network_profile;
   }
 

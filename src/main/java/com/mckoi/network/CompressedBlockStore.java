@@ -1,26 +1,18 @@
-/**
- * com.mckoi.network.CompressedBlockStore  Jul 16, 2009
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
@@ -29,6 +21,8 @@ import com.mckoi.data.NodeReference;
 import com.mckoi.util.StrongPagedAccess;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
@@ -64,6 +58,11 @@ public class CompressedBlockStore implements BlockStore {
    * A buffer for accesses to parts of the underlying file.
    */
   private StrongPagedAccess paged_content;
+
+  /**
+   * The logger.
+   */
+  private final static Logger log = Logger.getLogger("com.mckoi.network.Log");
 
   /**
    * Constructs the block store.
@@ -310,6 +309,7 @@ public class CompressedBlockStore implements BlockStore {
 
     // Input file,
     RandomAccessFile contents = new RandomAccessFile(source_file, "r");
+    long content_src_size = contents.length();
 
     // The compression algorithm works as follows;
 
@@ -336,12 +336,32 @@ public class CompressedBlockStore implements BlockStore {
         for (int p = i; p < n; ++p) {
           int node_pos = pos[p];
           if (node_pos > 0) {
-            short node_len = lens[p];
-            contents.seek(node_pos);
-            byte[] node_buf = new byte[node_len];
-            contents.readFully(node_buf);
 
-            data_compress_out.write(node_buf);
+            short node_len = lens[p];
+
+            // We do some sanity checks here. If they fail we assume the node
+            // in the block file is corrupt and write out zero'd node content.
+            boolean invalid_node = ( (node_len < 0 ||
+                                      node_pos + node_len > content_src_size) );
+
+            // Don't allow negative node len (incase of corrupt block store).
+            int act_node_len = Math.max(0, (int) node_len);
+            byte[] node_buf = new byte[act_node_len];
+
+            if (!invalid_node) {
+              contents.seek(node_pos);
+              contents.readFully(node_buf);
+              data_compress_out.write(node_buf);
+            }
+            else {
+              log.log(Level.SEVERE,
+                      "Corrupt block store. Zeroing node {0} {1} {2} {3}",
+                      new Object[] { source_file.toString(), p, node_pos, node_len }
+                      );
+              // Write zero'd out node content
+              data_compress_out.write(node_buf);
+            }
+
           }
           else {
             // Make sure to handle the empty node,

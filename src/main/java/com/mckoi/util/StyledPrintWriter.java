@@ -1,29 +1,23 @@
-/**
- * ccom.mckoi.util.StyledPrintWriter  Sep 30, 2012
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.util;
+
+import java.io.Writer;
 
 /**
  * An interface for writing text with a markup style to a console display. The
@@ -43,22 +37,32 @@ public interface StyledPrintWriter {
 
   /**
    * Outputs a string to the display.
+   * 
+   * @param str
    */
   void print(Object str);
 
   /**
    * Outputs a string to the display then moves the cursor to the next line.
+   * 
+   * @param str
    */
   void println(Object str);
 
   /**
    * Outputs a string to the display with the given style.
+   * 
+   * @param str
+   * @param style
    */
   void print(Object str, String style);
 
   /**
    * Outputs a string to the display with the given style then moves the cursor
    * to the next line.
+   * 
+   * @param str
+   * @param style
    */
   void println(Object str, String style);
 
@@ -69,6 +73,8 @@ public interface StyledPrintWriter {
 
   /**
    * Displays the given exception with the 'error' style.
+   * 
+   * @param e
    */
   void printException(Throwable e);
 
@@ -77,6 +83,19 @@ public interface StyledPrintWriter {
    */
   void flush();
 
+  /**
+   * Returns a java.io.Writer that prints through to this source.
+   * 
+   * @param style
+   * @return 
+   */
+  Writer asWriter(String style);
+
+  /**
+   * Returns a java.io.Writer that prints through to this source.
+   * @return 
+   */
+  Writer asWriter();
   
   public static final String ERROR = "error";
   public static final String INFO  = "info";

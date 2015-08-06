@@ -1,36 +1,31 @@
-/**
- * com.mckoi.network.TCPInstanceAdminServer  Dec 1, 2008
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- * 
- * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.network;
 
 import com.mckoi.util.AnalyticsHistory;
 import java.io.*;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,6 +74,16 @@ public class TCPInstanceAdminServer implements Runnable {
    * The password string needed to communicate with the administration server.
    */
   private final String password_string;
+
+  /**
+   * True if connections can be accepted from all network interfaces. Otherwise
+   * we check the network interface whitelist.
+   */
+  private final boolean allow_all_interfaces;
+
+  private final List<String> allowed_interface_names;
+
+  private final TCPConnectorValues tcp_connector_values;
 
   /**
    * The thread pool.
@@ -131,6 +136,12 @@ public class TCPInstanceAdminServer implements Runnable {
 
   /**
    * Constructs the instance server.
+   * 
+   * @param config_file the 'network.conf' properties.
+   * @param bind_address the local TCP address to bind the service to.
+   * @param port  the local TCP port for the service.
+   * @param node_properties the 'node.conf' properties.
+   * @throws java.io.IOException
    */
   public TCPInstanceAdminServer(NetworkConfigResource config_file,
                           InetAddress bind_address, int port,
@@ -191,6 +202,71 @@ public class TCPInstanceAdminServer implements Runnable {
     this.bind_interface = bind_address;
     this.port = port;
 
+    if (bind_address == null) {
+      String err_msg = "The local 'bind_address' is not defined.";
+      log.log(Level.SEVERE, err_msg);
+      throw new RuntimeException(err_msg);
+    }
+
+    // If it's a link local IPv6 address then it is required that the bind
+    // address must include a scope id.
+    if (bind_address instanceof Inet6Address) {
+      Inet6Address ipv6_addr = (Inet6Address) bind_address;
+      if (ipv6_addr.isLinkLocalAddress()) {
+        NetworkInterface scope_interface = ipv6_addr.getScopedInterface();
+        if (scope_interface == null) {
+          // We must include a scope id for link local because it's perfectly
+          // valid in the IPv6 world to have a machine with multiple
+          // network interfaces with the same link local address.
+          String err_msg = MessageFormat.format(
+                "The link local IPv6 bind address must include a scope id: {0}",
+                bind_address);
+          log.log(Level.SEVERE, err_msg);
+          throw new RuntimeException(err_msg);
+        }
+      }
+    }
+
+    // Get the bind interface network interface,
+    NetworkInterface bind_net_if =
+                              NetworkInterface.getByInetAddress(bind_address);
+    // If this is null then the given bind_address is not represented by
+    // this machine.
+    if (bind_net_if == null) {
+      String err_msg = MessageFormat.format(
+              "No network interface found for bind address: {0}", bind_address);
+      log.log(Level.SEVERE, err_msg);
+      throw new RuntimeException(err_msg);
+    }
+
+    // This is the interface we use to make outgoing connections to the
+    // DDB network. The net interface does not have to be defined, but when
+    // that's the case it means link-local IPv6 connections will not be
+    // permitted.
+    NetworkInterface output_net_interface = null;
+    String out_network_if = node_properties.getProperty("net_interface");
+    if (out_network_if != null) {
+      output_net_interface = NetworkInterface.getByName(out_network_if);
+      if (output_net_interface == null) {
+        // The 'net_interface' property didn't resolve to a NetworkInterface
+        // on this server,
+        String err_msg = MessageFormat.format(
+              "Network interface (from 'net_interface' property in " +
+              "node.conf) not found: {0}", out_network_if);
+        log.log(Level.SEVERE, err_msg);
+        throw new RuntimeException(err_msg);
+      }
+    }
+    else {
+      log.log(Level.WARNING,
+              "No 'net_interface' property found in node.conf, so link-local " +
+              "IPv6 connections are not permitted.");
+      log.log(Level.WARNING,
+              "If the DDB network contains IPv6 link-local servers you must " +
+              "add a 'net_interface' property to the node.conf on this server." +
+              "For example; 'net_interface=eth0'");
+    }
+
     // Get the network password property,
     val = node_properties.getProperty("network_password");
     if (val == null) {
@@ -230,6 +306,34 @@ public class TCPInstanceAdminServer implements Runnable {
       this.base_path = f;
       log.log(Level.CONFIG, "Set node directory to {0}", val);
     }
+
+    // The allowed input interfaces, if any,
+    String input_interface_whitelist =
+                    node_properties.getProperty("input_net_interfaces");
+    // If input_interface_whitelist is not present then allow connections from
+    // all interfaces.
+    if (input_interface_whitelist != null) {
+      allow_all_interfaces = false;
+      allowed_interface_names = new ArrayList();
+      String[] names = input_interface_whitelist.split(",");
+      for (String name : names) {
+        allowed_interface_names.add(name.trim());
+      }
+      log.log(Level.CONFIG, "Allowed input net interfaces: {0}", allowed_interface_names);
+    }
+    else {
+      log.log(Level.WARNING,
+              "WARNING: 'input_net_interfaces' property is not defined.");
+      log.log(Level.CONFIG,
+              "Allowing connections from all network interfaces.");
+
+      allow_all_interfaces = true;
+      allowed_interface_names = null;
+    }
+
+    // Create a static connector values object,
+    tcp_connector_values =
+                new TCPConnectorValues(password_string, output_net_interface);
 
     // The thread pool for servicing client requests,
     thread_pool = Executors.newCachedThreadPool();
@@ -297,7 +401,7 @@ public class TCPInstanceAdminServer implements Runnable {
           File active_f = new File(base_path, BLOCK_RUN_FILE);
           active_f.createNewFile();
           block_server = new LocalFileSystemBlockServer(
-                     new TCPNetworkConnector(password_string), npath, timer);
+                     new TCPNetworkConnector(tcp_connector_values), npath, timer);
           block_server.start();
         }
       }
@@ -310,7 +414,7 @@ public class TCPInstanceAdminServer implements Runnable {
           File active_f = new File(base_path, MANAGER_RUN_FILE);
           active_f.createNewFile();
           manager_server = new LocalFileSystemManagerServer(
-                   new TCPNetworkConnector(password_string), base_path, npath,
+                   new TCPNetworkConnector(tcp_connector_values), base_path, npath,
                    this_service, timer);
           manager_server.start();
         }
@@ -324,7 +428,7 @@ public class TCPInstanceAdminServer implements Runnable {
           File active_f = new File(base_path, ROOT_RUN_FILE);
           active_f.createNewFile();
           root_server = new LocalFileSystemRootServer(
-                   new TCPNetworkConnector(password_string), npath,
+                   new TCPNetworkConnector(tcp_connector_values), npath,
                    this_service, timer);
           root_server.start();
         }
@@ -500,7 +604,7 @@ public class TCPInstanceAdminServer implements Runnable {
               new Object[] { bind_interface.getHostAddress(), port });
 
       try {
-        
+
         // Set the 'instance_started' flag.
         synchronized (startup_lock) {
           instance_started = true;
@@ -516,18 +620,45 @@ public class TCPInstanceAdminServer implements Runnable {
             s.setSendBufferSize(256 * 1024);
           }
 
-          // Make sure this ip address is allowed,
+          // The address information,
           InetAddress inet_address = s.getInetAddress();
           String ip_addr = inet_address.getHostAddress();
-//          log.info("Connection from " + ip_addr);
+
+          // Is the connection IPv6?
+          if (inet_address instanceof Inet6Address) {
+
+            // IPv6 can have a scope id which is the interface the connection
+            // was received on. For the purpose of connection identification,
+            // we must strip off the scope id from the string.
+            //
+            // Note that an IPv6 connection with a scope id will look like the
+            // following;
+            //
+            //    'fe80::f030:9000:f000:3c1c%3'
+
+            int zoneid_delim = ip_addr.lastIndexOf('%');
+            if (zoneid_delim != -1) {
+              log.log(Level.INFO, "Stripping scope id: {0}", ip_addr);
+              ip_addr = ip_addr.substring(0, zoneid_delim);
+            }
+          }
+
+          log.log(Level.INFO, "Connection: {0}", ip_addr);
+
+          // Note that we know that the connection is from a good interface
+          // because we only bind to the interface we want connections from.
+
           // Check it's allowed,
           if (inet_address.isLoopbackAddress() ||
               config_file.isIPAllowed(ip_addr)) {
+
+            log.log(Level.INFO, "Connection permitted: {0}", ip_addr);
             // Dispatch the connection to the thread pool,
             thread_pool.execute(new Connection(s));
+
           }
           else {
-            log.log(Level.SEVERE, "Connection from IP refused (not on whitelist): {0}", ip_addr);
+            log.log(Level.SEVERE, "Connection refused (not on network.conf whitelist): {0}", ip_addr);
           }
         }
 
@@ -936,12 +1067,13 @@ public class TCPInstanceAdminServer implements Runnable {
       try {
         fallthrough.run();
       }
+      // Log any exception thrown,
       catch (Error e) {
-        // We let these exceptions fall through and stop the timer,
+        // ISSUE: Should we rethrow this? These represent serious failures.
+        log.log(Level.SEVERE, "Error caught during task", e);
       }
       catch (Throwable e) {
-        // Otherwise log throwable,
-        log.log(Level.SEVERE, "Exception during task", e);
+        log.log(Level.SEVERE, "Throwable caught during task", e);
       }
 
     }

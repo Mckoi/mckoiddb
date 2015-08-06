@@ -1,26 +1,18 @@
-/**
- * com.mckoi.odb.util.DirectorySynchronizer  Mar 14, 2012
+/*
+ * Mckoi Software ( http://www.mckoi.com/ )
+ * Copyright (C) 2000 - 2015  Diehl and Associates, Inc.
  *
- * Mckoi Database Software ( http://www.mckoi.com/ )
- * Copyright (C) 2000 - 2012  Diehl and Associates, Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License version 3 as published by
- * the Free Software Foundation.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * This program is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
- * more details.
- *
- * You should have received a copy of the GNU General Public License version 3
- * along with this program.  If not, see ( http://www.gnu.org/licenses/ ) or
- * writeCopyOf to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA  02111-1307, USA.
- *
- * Change Log:
- *
- *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package com.mckoi.odb.util;
@@ -34,6 +26,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import static com.mckoi.odb.util.DirectorySynchronizerFeedback.*;
 
 /**
  * A utility that can synchronize a hierarchy of files with an ODB file
@@ -57,9 +51,9 @@ public class DirectorySynchronizer {
   private boolean delete_files = true;
 
   /**
-   * The stream to output information to.
+   * The directory synchronizer feedback object.
    */
-  private final StyledPrintWriter out;
+  private final DirectorySynchronizerFeedback feedback;
   
   /**
    * The source repository.
@@ -72,16 +66,24 @@ public class DirectorySynchronizer {
   private final SynchronizerRepository dest_rep;
 
 
-  public DirectorySynchronizer(StyledPrintWriter out,
+  public DirectorySynchronizer(DirectorySynchronizerFeedback feedback,
                                SynchronizerRepository source,
                                SynchronizerRepository dest) {
-    this.out = out;
+    this.feedback = (feedback == null) ? new StyledDSFeedback(null) : feedback;
     this.source_rep = source;
     this.dest_rep = dest;
   }
 
+  public DirectorySynchronizer(StyledPrintWriter out,
+                               SynchronizerRepository source,
+                               SynchronizerRepository dest) {
+    this(new StyledDSFeedback(out), source, dest);
+  }
+
   /**
    * Adds a directory to skip in the synchronization. (eg. '/META-INF/')
+   * 
+   * @param path
    */
   public void addPathToSkip(String path) {
     if (skip_directories == null) {
@@ -94,6 +96,8 @@ public class DirectorySynchronizer {
    * Sets the 'delete_files' flag which causes the 'synchronize' method
    * to delete files and directories. By default, this is set to true so set
    * to false if you don't want anything deleted.
+   * 
+   * @param status
    */
   public void setDeleteFilesFlag(boolean status) {
     delete_files = status;
@@ -105,6 +109,9 @@ public class DirectorySynchronizer {
    * <p>
    * Returns the number of updates performed. If 0 is returned then no
    * changes were made to the destination repository.
+   * 
+   * @return 
+   * @throws java.io.IOException
    */
   public long synchronize() throws IOException {
     return recursiveSynchronizeDir("/");
@@ -112,31 +119,35 @@ public class DirectorySynchronizer {
 
   /**
    * Synchronizes the source directory hierarchy with the destination
-   * location.
-   * <p>
-   * Returns the number of updates performed. If 0 is returned then no
-   * changes were made to the destination repository.
+   * location without any feedback generated.
+   * 
+   * @param source the source repository abstraction.
+   * @param dest the destination repository abstraction.
+   * @return 
    */
   public static DirectorySynchronizer getSynchronizer(
                           SynchronizerRepository source,
                           SynchronizerRepository dest) {
 
-    return new DirectorySynchronizer(null, source, dest);
+    return new DirectorySynchronizer((StyledPrintWriter) null, source, dest);
 
   }
-  
+
   /**
    * Synchronizes the directory in the local file system with the given
    * Mckoi file system.
-   * <p>
-   * Returns the number of updates performed. If 0 is returned then no
-   * changes were made to the destination repository.
+   * 
+   * @param fb the writer to output the feedback.
+   * @param local_path the local path in the local file system.
+   * @param mckoi_file_sys the Mckoi file system.
+   * @param mckoi_path the path in the mckoi file system.
+   * @return 
    */
   public static DirectorySynchronizer getJavaToMckoiSynchronizer(
-                       StyledPrintWriter out, File local_path,
+                       DirectorySynchronizerFeedback fb, File local_path,
                        FileSystem mckoi_file_sys, String mckoi_path) {
 
-    return new DirectorySynchronizer(out,
+    return new DirectorySynchronizer(fb,
                          new JavaRepository(local_path),
                          new MckoiRepository(mckoi_file_sys, mckoi_path));
 
@@ -145,16 +156,19 @@ public class DirectorySynchronizer {
   /**
    * Synchronizes the directory in the Mckoi file system with the local file
    * system.
-   * <p>
-   * Returns the number of updates performed. If 0 is returned then no
-   * changes were made to the destination repository.
+   * 
+   * @param fb the writer to output the feedback.
+   * @param mckoi_file_sys the Mckoi file system.
+   * @param mckoi_path the path in the mckoi file system.
+   * @param local_path the local path in the local file system.
+   * @return 
    */
   public static DirectorySynchronizer getMckoiToJavaSynchronizer(
-                       StyledPrintWriter out,
+                       DirectorySynchronizerFeedback fb,
                        FileSystem mckoi_file_sys, String mckoi_path,
                        File local_path) {
 
-    return new DirectorySynchronizer(out,
+    return new DirectorySynchronizer(fb,
                          new MckoiRepository(mckoi_file_sys, mckoi_path),
                          new JavaRepository(local_path) );
 
@@ -162,16 +176,20 @@ public class DirectorySynchronizer {
 
   /**
    * Synchronizes the Mckoi file system with the given Mckoi file system.
-   * <p>
-   * Returns the number of updates performed. If 0 is returned then no
-   * changes were made to the destination repository.
+   * 
+   * @param fb the writer to output the feedback.
+   * @param mckoi_src_filesys the source Mckoi file system.
+   * @param mckoi_src_path the source Mckoi path.
+   * @param mckoi_dst_filesys the destination Mckoi file system.
+   * @param mckoi_dst_path the destination Mckoi path
+   * @return 
    */
   public static DirectorySynchronizer getMckoiToMckoiSynchronizer(
-                       StyledPrintWriter out,
+                       DirectorySynchronizerFeedback fb,
                        FileSystem mckoi_src_filesys, String mckoi_src_path,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path) {
 
-    return new DirectorySynchronizer(out,
+    return new DirectorySynchronizer(fb,
                        new MckoiRepository(mckoi_src_filesys, mckoi_src_path),
                        new MckoiRepository(mckoi_dst_filesys, mckoi_dst_path));
 
@@ -182,16 +200,23 @@ public class DirectorySynchronizer {
    * <p>
    * Returns the number of updates performed. If 0 is returned then no
    * changes were made to the destination repository.
+   * 
+   * @param fb the writer to output the feedback.
+   * @param zip_file the zip file source.
+   * @param mckoi_dst_filesys the destination Mckoi file system.
+   * @param mckoi_dst_path the destination Mckoi path
+   * @return 
+   * @throws java.io.IOException 
    */
   public static DirectorySynchronizer getZipToMckoiSynchronizer(
-                       StyledPrintWriter out, File zip_file,
+                       DirectorySynchronizerFeedback fb, File zip_file,
                        FileSystem mckoi_dst_filesys, String mckoi_dst_path)
                                                            throws IOException {
 
     ZipRepository zip_repository = new ZipRepository(zip_file);
     zip_repository.init();
 
-    return new DirectorySynchronizer(out,
+    return new DirectorySynchronizer(fb,
                        zip_repository,
                        new MckoiRepository(mckoi_dst_filesys, mckoi_dst_path));
 
@@ -201,6 +226,10 @@ public class DirectorySynchronizer {
 
   /**
    * Calculates the SHA-256 hash of the data in the given input stream.
+   * 
+   * @param ins the input stream to hash.
+   * @return 
+   * @throws java.io.IOException
    */
   public static byte[] calcHash(InputStream ins) throws IOException {
     // Get SHA digest,
@@ -301,7 +330,8 @@ public class DirectorySynchronizer {
       touched_files.add(source_file_name);
       String absolute_dest_name = sync_dir + source_file_name;
 
-      boolean different = true;
+      boolean write_new_file = true;
+      boolean write_timestamp = false;
       SynchronizerFile dest_fo =
                             dest_rep.getFileObject(sync_dir, source_file_name);
       // Create it if it doesn't exist
@@ -312,6 +342,9 @@ public class DirectorySynchronizer {
       // Is the file different?
       long src_size = source_file.getSize();
       long dst_size = dest_fo.getSize();
+      long source_ts = source_file.getTimestamp();
+      long dest_ts = dest_fo.getTimestamp();
+
       // If size is same, compare hashes,
       if (src_size == dst_size) {
         // Calculate hashes of the files,
@@ -319,19 +352,30 @@ public class DirectorySynchronizer {
         byte[] dst_hash = dest_fo.getSHAHash();
         // If the hash is the same, the files are not different
         if (Arrays.equals(src_hash, dst_hash)) {
-          if (out != null) {
-            out.println("SKIP; " + absolute_dest_name + " (same hash)");
+          // Size and hash the same, are the timestamps different?
+          if (source_ts < dest_ts - 500 || source_ts > dest_ts + 500) {
+            // Yes
+            write_timestamp = true;
           }
-          different = false;
+          write_new_file = false;
         }
       }
-      // If the files are different then rewrite the destination file,
-      if (different) {
-        if (out != null) {
-          out.println("WRITE; " + absolute_dest_name);
-        }
+      // If the file content is different then rewrite the destination file,
+      if (write_new_file) {
+        feedback.reportFileSynchronized(WRITTEN, absolute_dest_name, src_size);
         dest_rep.writeCopyOf(source_file, sync_dir);
         ++running_update_count;
+      }
+      // If the timestamp is different then update the timestamp,
+      else if (write_timestamp) {
+        feedback.reportFileSynchronized(TOUCHED, absolute_dest_name, dst_size);
+        // Update the timestamp,
+        dest_fo.setTimestamp(source_ts);
+        ++running_update_count;
+      }
+      // Otherwise no change necessary,
+      else {
+        feedback.reportFileSynchronized(SKIPPED, absolute_dest_name, dst_size);
       }
     }
 
@@ -349,9 +393,7 @@ public class DirectorySynchronizer {
         if (pos < 0) {
           String file_abs_name = sync_dir + item_name;
           // Not in the list, so delete this,
-          if (out != null) {
-            out.println("DELETE; " + file_abs_name);
-          }
+          feedback.reportFileSynchronized(DELETED, file_abs_name, 0);
           dest_file.delete();
           ++running_update_count;
         }
@@ -363,9 +405,7 @@ public class DirectorySynchronizer {
         if (pos < 0) {
           String dir_abs_name = sync_dir + dir;
           // Not in the list, so recursively delete this,
-          if (out != null) {
-            out.println("REMOVE DIRECTORY; " + dir_abs_name);
-          }
+          feedback.reportDirectoryRemoved(dir_abs_name);
           dest_rep.removeDirectory(dir_abs_name);
           ++running_update_count;
         }
@@ -483,6 +523,9 @@ public class DirectorySynchronizer {
       // Touch the copy,
       dest_file_ob.setTimestamp(file_ob.getTimestamp());
 
+      ins.close();
+      outs.close();
+
     }
 
     @Override
@@ -550,7 +593,10 @@ public class DirectorySynchronizer {
     @Override
     public byte[] getSHAHash() throws IOException {
       checkExists();
-      return calcHash(new FileInputStream(file));
+      FileInputStream fin = new FileInputStream(file);
+      byte[] hash = calcHash(fin);
+      fin.close();
+      return hash;
     }
 
     @Override
@@ -701,6 +747,9 @@ public class DirectorySynchronizer {
           }
           outs.write(buf, 0, read);
         }
+        
+        ins.close();
+        outs.close();
       }
 
       // Touch the file,
@@ -1029,7 +1078,48 @@ public class DirectorySynchronizer {
 
     @Override
     public InputStream getInputStream() throws IOException {
-      return zip_file.getInputStream(zip_entry);
+      final InputStream zip_input = zip_file.getInputStream(zip_entry);
+      // Delegate InputStream and prevent it from being closed. When a zip
+      // file entry is closed it closes all other entries that are open.
+      return new InputStream() {
+        @Override
+        public int read() throws IOException {
+          return zip_input.read();
+        }
+        @Override
+        public boolean markSupported() {
+          return zip_input.markSupported();
+        }
+        @Override
+        public synchronized void reset() throws IOException {
+          zip_input.reset();
+        }
+        @Override
+        public synchronized void mark(int readlimit) {
+          zip_input.mark(readlimit);
+        }
+        @Override
+        public void close() throws IOException {
+          // We don't want to close the zip when close is called, so this does
+          // nothing.
+        }
+        @Override
+        public int available() throws IOException {
+          return zip_input.available();
+        }
+        @Override
+        public long skip(long n) throws IOException {
+          return zip_input.skip(n);
+        }
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+          return zip_input.read(b, off, len);
+        }
+        @Override
+        public int read(byte[] b) throws IOException {
+          return zip_input.read(b);
+        }
+      };
     }
 
     @Override
@@ -1048,6 +1138,53 @@ public class DirectorySynchronizer {
       return zip_entry.getName();
     }
 
+  }
+
+  /**
+   * Outputs feedback to a styled writer.
+   */
+  public static class StyledDSFeedback
+                                    implements DirectorySynchronizerFeedback {
+
+    private final StyledPrintWriter out;
+
+    public StyledDSFeedback(StyledPrintWriter out) {
+      this.out = out;
+    }
+
+    @Override
+    public void reportFileSynchronized(
+                          String sync_type, String file_name, long file_size) {
+      if (out != null) {
+        switch (sync_type) {
+          case SKIPPED:
+            out.print("Skipped; ");
+            break;
+          case TOUCHED:
+            out.print("Touched; ");
+            break;
+          case WRITTEN:
+            out.print("Written; ");
+            break;
+          case DELETED:
+            out.print("Deleted; ");
+            break;
+          default:
+            out.print("?: ");
+            break;
+        }
+        out.println(file_name, StyledPrintWriter.INFO);
+      }
+    }
+
+    @Override
+    public void reportDirectoryRemoved(String directory_name) {
+      if (out != null) {
+        out.print("Deleted Directory; ");
+        out.println(directory_name, StyledPrintWriter.INFO);
+      }
+    }
+  
   }
 
   public final static Comparator ZIP_PATH_COMPARATOR = new Comparator() {
