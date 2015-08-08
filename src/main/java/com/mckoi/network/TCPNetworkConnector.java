@@ -31,7 +31,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,7 +48,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * The background thread that kills connections that timeout.
    */
-  private ConnectionDestroyThread background_thread;
+  private final ConnectionDestroyThread background_thread;
 
   /**
    * The pool of active connections from this JVM to other nodes in the
@@ -65,7 +64,7 @@ class TCPNetworkConnector implements NetworkConnector {
   /**
    * The network password used to connect to the services.
    */
-  private String password;
+  private final String password;
 
   private int introduced_latency = 0;
 
@@ -89,7 +88,7 @@ class TCPNetworkConnector implements NetworkConnector {
     if (security != null)
          security.checkPermission(MckoiNetworkPermission.CREATE_TCP_CONNECTOR);
 
-    connection_pool = new HashMap();
+    connection_pool = new HashMap<>();
     this.password = properties.getNetworkPassword();
     this.network_interface = properties.getOutputNetworkInterface();
 
@@ -247,7 +246,7 @@ class TCPNetworkConnector implements NetworkConnector {
       // is dynamic (a call stack that ends up here can be from anything).
       // We assume that all objects that call through to this are secured.
       try {
-        AccessController.doPrivileged(new PrivilegedExceptionAction() {
+        AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
           @Override
           public Object run() throws IOException {
             InetAddress iaddr = addr.asInetAddress();
@@ -266,7 +265,7 @@ class TCPNetworkConnector implements NetworkConnector {
                   // link local address,
                   if (i6addr.isLinkLocalAddress()) {
                     String err_msg = MessageFormat.format(
-                        "Attempting to connect to link local '{0}' with no network interface specified.", i6addr);
+                        "Attempting to connect to link local ''{0}'' with no network interface specified.", i6addr);
                     throw new IOException(err_msg);
                   }
                   // IP address is not link local and so does not need a
@@ -331,7 +330,7 @@ class TCPNetworkConnector implements NetworkConnector {
       }
       dout.flush();
 
-      message_dictionary = new HashMap(128);
+      message_dictionary = new HashMap<>(128);
 
     }
 
@@ -496,7 +495,7 @@ class TCPNetworkConnector implements NetworkConnector {
     @Override
     public void run() {
       try {
-        ArrayList<TCPConnection> timeout_list = new ArrayList();
+        ArrayList<TCPConnection> timeout_list = new ArrayList<>();
         while (true) {
           timeout_list.clear();
           synchronized (connection_pool) {

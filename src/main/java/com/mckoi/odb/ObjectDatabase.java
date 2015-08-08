@@ -22,7 +22,6 @@ import com.mckoi.network.CommitFaultException;
 import com.mckoi.network.ConsensusDDBConnection;
 import com.mckoi.network.ConsensusProcessor;
 import com.mckoi.network.DataAddress;
-import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -60,6 +59,7 @@ public class ObjectDatabase implements ConsensusProcessor {
   /**
    * The name of this processor, displayed in the administration user
    * interface.
+   * @return 
    */
   @Override
   public String getName() {
@@ -69,6 +69,7 @@ public class ObjectDatabase implements ConsensusProcessor {
   /**
    * A description of this processor appropriate for display in the help
    * section of the user interface.
+   * @return 
    */
   @Override
   public String getDescription() {
@@ -76,9 +77,7 @@ public class ObjectDatabase implements ConsensusProcessor {
            "persistent graph structures.";
   }
 
-  /**
-   * {@inheritDoc}
-   */
+
   @Override
   public String getStats(ConsensusDDBConnection connection,
                          DataAddress snapshot) {
@@ -103,9 +102,6 @@ public class ObjectDatabase implements ConsensusProcessor {
     }
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public void initialize(ConsensusDDBConnection connection) {
     // Get the current root,
@@ -122,9 +118,6 @@ public class ObjectDatabase implements ConsensusProcessor {
     connection.publishToPath(final_root);
   }
 
-  /**
-   * {@inheritDoc}
-   */
   @Override
   public DataAddress commit(ConsensusDDBConnection connection,
                             DataAddress proposal) throws CommitFaultException {
@@ -210,7 +203,7 @@ public class ObjectDatabase implements ConsensusProcessor {
         // Move allocations of data/list and class buckets from the proposal
         // first;
 
-        HashMap<Key, String> resource_map = new HashMap();
+        HashMap<Key, String> resource_map = new HashMap<>();
         final String NEW_KEY  = "NK";
         final String SAME_KEY = "SK";
 
@@ -333,9 +326,9 @@ public class ObjectDatabase implements ConsensusProcessor {
             // Check there is no clashing change in the root log
             if (root_log.hasObjectChange(evt)) {
               // The object changed historically, so generate a commit fault,
-              throw new CommitFaultException(MessageFormat.format(
+              throw new CommitFaultException(
                           "Object at reference {0} concurrently modified",
-                          evt.getObjectReference()));
+                          evt.getObjectReference());
             }
 //            ++counter;
           }
@@ -349,9 +342,9 @@ public class ObjectDatabase implements ConsensusProcessor {
             // Check there is no clashing change in the root log
             if (root_log.hasDataChange(evt)) {
               // The data changed historically, so generate a commit fault,
-              throw new CommitFaultException(MessageFormat.format(
+              throw new CommitFaultException(
                           "Data at reference {0} concurrently modified",
-                          evt.getDataReference()));
+                          evt.getDataReference());
             }
 //            ++counter;
           }
@@ -395,7 +388,7 @@ public class ObjectDatabase implements ConsensusProcessor {
 
         // The set of lists changed in the proposal also changed in the
         // roots list,
-        HashSet<Reference> list_builds = new HashSet();
+        HashSet<Reference> list_builds = new HashSet<>();
 
         // For each root,
         for (DataAddress root : roots) {

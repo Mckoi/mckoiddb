@@ -148,7 +148,7 @@ public class TCPInstanceAdminServer implements Runnable {
                           Properties node_properties) throws IOException {
 
     // Create the connection list
-    connection_list = new ArrayList();
+    connection_list = new ArrayList<>();
 
     // Set the log level,
     String val = node_properties.getProperty("log_level", "info");
@@ -251,7 +251,7 @@ public class TCPInstanceAdminServer implements Runnable {
         // The 'net_interface' property didn't resolve to a NetworkInterface
         // on this server,
         String err_msg = MessageFormat.format(
-              "Network interface (from 'net_interface' property in " +
+              "Network interface (from ''net_interface'' property in " +
               "node.conf) not found: {0}", out_network_if);
         log.log(Level.SEVERE, err_msg);
         throw new RuntimeException(err_msg);
@@ -314,7 +314,7 @@ public class TCPInstanceAdminServer implements Runnable {
     // all interfaces.
     if (input_interface_whitelist != null) {
       allow_all_interfaces = false;
-      allowed_interface_names = new ArrayList();
+      allowed_interface_names = new ArrayList<>();
       String[] names = input_interface_whitelist.split(",");
       for (String name : names) {
         allowed_interface_names.add(name.trim());
@@ -348,6 +348,13 @@ public class TCPInstanceAdminServer implements Runnable {
 
   /**
    * Constructs the instance server.
+   * 
+   * @param config_file
+   * @param bind_address
+   * @param port
+   * @param password
+   * @param base_path
+   * @throws java.io.IOException
    */
   public TCPInstanceAdminServer(NetworkConfigResource config_file,
                           InetAddress bind_address, int port,
@@ -392,49 +399,50 @@ public class TCPInstanceAdminServer implements Runnable {
       if (!base_path.exists()) {
         base_path.mkdirs();
       }
-      if (service_type.equals("block_server")) {
-        if (block_server == null) {
-          File npath = new File(base_path, "block");
-          if (!npath.exists()) {
-            npath.mkdir();
+      switch (service_type) {
+        case "block_server":
+          if (block_server == null) {
+            File npath = new File(base_path, "block");
+            if (!npath.exists()) {
+              npath.mkdir();
+            }
+            File active_f = new File(base_path, BLOCK_RUN_FILE);
+            active_f.createNewFile();
+            block_server = new LocalFileSystemBlockServer(
+                    new TCPNetworkConnector(tcp_connector_values), npath, timer);
+            block_server.start();
           }
-          File active_f = new File(base_path, BLOCK_RUN_FILE);
-          active_f.createNewFile();
-          block_server = new LocalFileSystemBlockServer(
-                     new TCPNetworkConnector(tcp_connector_values), npath, timer);
-          block_server.start();
-        }
-      }
-      else if (service_type.equals("manager_server")) {
-        if (manager_server == null) {
-          File npath = new File(base_path, "manager");
-          if (!npath.exists()) {
-            npath.mkdir();
+          break;
+        case "manager_server":
+          if (manager_server == null) {
+            File npath = new File(base_path, "manager");
+            if (!npath.exists()) {
+              npath.mkdir();
+            }
+            File active_f = new File(base_path, MANAGER_RUN_FILE);
+            active_f.createNewFile();
+            manager_server = new LocalFileSystemManagerServer(
+                    new TCPNetworkConnector(tcp_connector_values), base_path, npath,
+                    this_service, timer);
+            manager_server.start();
           }
-          File active_f = new File(base_path, MANAGER_RUN_FILE);
-          active_f.createNewFile();
-          manager_server = new LocalFileSystemManagerServer(
-                   new TCPNetworkConnector(tcp_connector_values), base_path, npath,
-                   this_service, timer);
-          manager_server.start();
-        }
-      }
-      else if (service_type.equals("root_server")) {
-        if (root_server == null) {
-          File npath = new File(base_path, "root");
-          if (!npath.exists()) {
-            npath.mkdir();
+          break;
+        case "root_server":
+          if (root_server == null) {
+            File npath = new File(base_path, "root");
+            if (!npath.exists()) {
+              npath.mkdir();
+            }
+            File active_f = new File(base_path, ROOT_RUN_FILE);
+            active_f.createNewFile();
+            root_server = new LocalFileSystemRootServer(
+                    new TCPNetworkConnector(tcp_connector_values), npath,
+                    this_service, timer);
+            root_server.start();
           }
-          File active_f = new File(base_path, ROOT_RUN_FILE);
-          active_f.createNewFile();
-          root_server = new LocalFileSystemRootServer(
-                   new TCPNetworkConnector(tcp_connector_values), npath,
-                   this_service, timer);
-          root_server.start();
-        }
-      }
-      else {
-        throw new RuntimeException("Unknown service: " + service_type);
+          break;
+        default:
+          throw new RuntimeException("Unknown service: " + service_type);
       }
     }
   }
@@ -444,32 +452,33 @@ public class TCPInstanceAdminServer implements Runnable {
    */
   private void stopService(String service_type) throws IOException {
     synchronized (server_manager_lock) {
-      if (service_type.equals("block_server")) {
-        if (block_server != null) {
-          File active_f = new File(base_path, BLOCK_RUN_FILE);
-          active_f.delete();
-          block_server.stop();
-          block_server = null;
-        }
-      }
-      else if (service_type.equals("manager_server")) {
-        if (manager_server != null) {
-          File active_f = new File(base_path, MANAGER_RUN_FILE);
-          active_f.delete();
-          manager_server.stop();
-          manager_server = null;
-        }
-      }
-      else if (service_type.equals("root_server")) {
-        if (root_server != null) {
-          File active_f = new File(base_path, ROOT_RUN_FILE);
-          active_f.delete();
-          root_server.stop();
-          root_server = null;
-        }
-      }
-      else {
-        throw new RuntimeException("Unknown service: " + service_type);
+      switch (service_type) {
+        case "block_server":
+          if (block_server != null) {
+            File active_f = new File(base_path, BLOCK_RUN_FILE);
+            active_f.delete();
+            block_server.stop();
+            block_server = null;
+          }
+          break;
+        case "manager_server":
+          if (manager_server != null) {
+            File active_f = new File(base_path, MANAGER_RUN_FILE);
+            active_f.delete();
+            manager_server.stop();
+            manager_server = null;
+          }
+          break;
+        case "root_server":
+          if (root_server != null) {
+            File active_f = new File(base_path, ROOT_RUN_FILE);
+            active_f.delete();
+            root_server.stop();
+            root_server = null;
+          }
+          break;
+        default:
+          throw new RuntimeException("Unknown service: " + service_type);
       }
     }
   }
@@ -478,7 +487,7 @@ public class TCPInstanceAdminServer implements Runnable {
   /**
    * A timed task that updates the network configuration.
    */
-  private TimerTask config_update_task = new TimerTask() {
+  private final TimerTask config_update_task = new TimerTask() {
     @Override
     public void run() {
       try {
@@ -750,7 +759,7 @@ public class TCPInstanceAdminServer implements Runnable {
     Connection(Socket s) {
       this.s = s;
       this.random_generator = new Random();
-      this.message_dictionary = new HashMap();
+      this.message_dictionary = new HashMap<>();
     }
 
     /**
@@ -1051,7 +1060,7 @@ public class TCPInstanceAdminServer implements Runnable {
 
   private static class CException extends TimerTask {
 
-    private TimerTask fallthrough;
+    private final TimerTask fallthrough;
 
     public CException(TimerTask fallthrough) {
       this.fallthrough = fallthrough;

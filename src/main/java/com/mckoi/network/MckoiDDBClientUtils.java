@@ -169,7 +169,7 @@ public class MckoiDDBClientUtils {
       out_net_if = NetworkInterface.getByName(out_net_interface);
       if (out_net_if == null) {
         String err_msg = MessageFormat.format(
-            "'net_interface' property is not a valid network interface: {0}",
+            "''net_interface'' property is not a valid network interface: {0}",
             out_net_interface);
         throw new RuntimeException(err_msg);
       }
