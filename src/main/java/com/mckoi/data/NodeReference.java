@@ -72,7 +72,7 @@ public final class NodeReference extends Integer128Bit {
    */
   public TreeNode createSpecialTreeNode() {
     long c = ref[0] & 0x0F000000000000000L;
-    // If it's a sparce special node,
+    // If it's a sparse special node,
     if (c == SPARSE_HIGH_LONG) {
       // Create the sparse node
       byte b = (byte) (ref[0] & 0x0FF);
@@ -183,7 +183,7 @@ public final class NodeReference extends Integer128Bit {
     /**
      * The byte that's in the sparse node.
      */
-    private final byte sparce_byte;
+    private final byte sparse_byte;
 
     private final NodeReference node_ref;
     private final int leaf_size;
@@ -191,12 +191,11 @@ public final class NodeReference extends Integer128Bit {
     /**
      * Constructor.
      */
-    public SparseLeafNode(NodeReference node_ref,
-                          byte sparce_byte, int leaf_size) {
+    SparseLeafNode(NodeReference node_ref, byte sparse_byte, int leaf_size) {
       super();
       this.node_ref = node_ref;
       this.leaf_size = leaf_size;
-      this.sparce_byte = sparce_byte;
+      this.sparse_byte = sparse_byte;
     }
 
     // ---------- Implemented from TreeLeaf ----------
@@ -219,7 +218,7 @@ public final class NodeReference extends Integer128Bit {
 
     @Override
     public byte get(int position) throws IOException {
-      return sparce_byte;
+      return sparse_byte;
     }
 
     @Override
@@ -227,7 +226,7 @@ public final class NodeReference extends Integer128Bit {
                                                           throws IOException {
       int end = off + len;
       for (int i = off; i < end; ++i) {
-        buf[i] = sparce_byte;
+        buf[i] = sparse_byte;
       }
     }
 
@@ -235,7 +234,7 @@ public final class NodeReference extends Integer128Bit {
     public void writeDataTo(AreaWriter writer) throws IOException {
       int sz = getSize();
       for (int i = 0; i < sz; ++i) {
-        writer.put(sparce_byte);
+        writer.put(sparse_byte);
       }
     }
 

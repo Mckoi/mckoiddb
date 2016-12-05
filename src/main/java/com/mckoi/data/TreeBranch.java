@@ -22,7 +22,7 @@ import java.io.IOException;
 /**
  * A branch of the tree in a TreeStore.  A branch contains pointers to other
  * nodes in the tree, a key extent (the number of bytes in the subtree), and 
- * a key value the deliminates each pointer.  For example,
+ * a key value that delimits each pointer.  For example,
  * <code>
  * +---------+--------+  +----------------------+  +---------+--------+
  * | POINTER | EXTENT |  | KEY_VALUE (16 bytes) |  | POINTER | EXTENT |  ....

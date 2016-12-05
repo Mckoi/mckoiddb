@@ -31,7 +31,7 @@ import com.mckoi.util.PropertyWrite;
  * data as 16 bit unicode character strings.
  * <p>
  * The format used to store the property map is very simple; Each key/value
- * pair is a variable length string wherein the key and value is deliminated
+ * pair is a variable length string wherein the key and value is delimited
  * with an '=' character.  All properties are stored in an OrderedSetString
  * object in lexicographical order by the property key.  A key lookup is
  * therefore a binary search over the set of all strings.
@@ -52,7 +52,7 @@ public class PropertySet implements PropertyRead, PropertyWrite {
 
   // ------ Statics -----
   
-  private static final Comparator PROPERTY_COLLATOR, KEYS_COLLATOR;
+  private static final Comparator<String> PROPERTY_COLLATOR, KEYS_COLLATOR;
   
   static {
     PROPERTY_COLLATOR = new Comparator<String>() {

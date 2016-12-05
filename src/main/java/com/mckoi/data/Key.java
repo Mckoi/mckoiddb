@@ -18,7 +18,7 @@
 package com.mckoi.data;
 
 /**
- * A Key is a reference in an address space that destinguishes one data file
+ * A Key is a reference in an address space that distinguishes one data file
  * from another within a context. A key is an identity to some stored
  * information.
  * <p>
@@ -134,7 +134,7 @@ public final class Key extends AbstractKey {
       return "TAIL";
     }
     else {
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       buf.append("(");
       buf.append(getSecondary());
       buf.append("-");

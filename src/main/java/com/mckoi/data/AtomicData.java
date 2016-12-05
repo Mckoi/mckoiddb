@@ -21,7 +21,7 @@ import java.math.BigInteger;
 
 /**
  * An atomic data element that may be safely accessed and modified across
- * transactions with consistant characteristics.  Used to implement sequences.
+ * transactions with consistent characteristics.  Used to implement sequences.
  * <p>
  * All atomic data elements are 16 bytes in size (128 bits).
  *
@@ -33,27 +33,27 @@ public interface AtomicData {
   /**
    * Returns the key identifier for this data element.
    */
-  public AtomicKey getKey();
-  
+  AtomicKey getKey();
+
   /**
    * Sets this element to the given value.
    */
-  public void setValue(byte[] buf);
+  void setValue(byte[] buf);
 
   /**
    * Gets this element (copies it to the given byte[] array).
    */
-  public void getValue(byte[] buf);
-  
+  void getValue(byte[] buf);
+
   /**
    * Returns this data element as a BigInteger value.
    */
-  public BigInteger toBigInteger();
-  
+  BigInteger toBigInteger();
+
   /**
    * Sets this data element as a BigInteger value.
    */
-  public void setValue(BigInteger bi);
+  void setValue(BigInteger bi);
 
   /**
    * Adds a quantity to the atomic value (as represented by a BigInteger) and
@@ -61,19 +61,13 @@ public interface AtomicData {
    * meaning there is an implied lock when changing the value and fetching the
    * next value.  This method can be used to implement sequence generators.
    */
-  public BigInteger addThenFetch(long add_amount);
+  BigInteger addThenFetch(long add_amount);
 
   /**
    * Adds a quantity to the atomic value (as represented by a BigInteger) and
    * returns the value as a BigInteger as it was before the quantity was added.
    * The fetch and add operation is atomic.
    */
-  public BigInteger fetchThenAdd(long add_amount);
-  
-  
-//  /**
-//   * Writes the serialization of this object out to the given DataFile object.
-//   */
-//  public void writeTo(DataFile data) throws java.io.IOException;
+  BigInteger fetchThenAdd(long add_amount);
 
 }

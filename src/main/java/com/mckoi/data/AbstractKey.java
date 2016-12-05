@@ -99,11 +99,10 @@ public class AbstractKey implements Comparable<AbstractKey> {
    * key is greater than the given key, a negative number if this key is less
    * than the given key, and 0 if the keys are equal.
    */
-  public int compareTo(AbstractKey ob) {
-    if (this == ob) {
+  public int compareTo(AbstractKey key) {
+    if (this == key) {
       return 0;
     }
-    AbstractKey key = (AbstractKey) ob;
 
     // Either this key or the compared key are not special case, so collate
     // on the key values,

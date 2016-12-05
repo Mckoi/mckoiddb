@@ -639,7 +639,7 @@ public class OrderedList64Bit implements Index64Bit {
      * position must be set to -1.  For 'previous' to return the last value in
      * the set, the position must be set to size().
      *
-     * @param position the position to move to.
+     * @param p the position to move to.
      */
     public void position(long p) {
       this.p = p;

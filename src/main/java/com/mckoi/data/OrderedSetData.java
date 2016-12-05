@@ -689,10 +689,10 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   private void putInCache(DataSectionByteArray mid_value) {
     // Simply add this to the list,
     if (root_set.section_cache == null) {
-      root_set.section_cache = new ArrayList(16);
+      root_set.section_cache = new ArrayList<>(16);
     }
 
-    List sc = root_set.section_cache;
+    List<DataSectionByteArray> sc = root_set.section_cache;
     if (sc.size() >= 16) {
       // Remove some elements from this,
       Collections.shuffle(sc);
@@ -886,10 +886,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
   public boolean isEmpty() {
     updateInternalState();
     // If start_pos == end_pos then the list is empty
-    if (this.start_pos == this.end_pos) {
-      return true;
-    }
-    return false;
+    return (this.start_pos == this.end_pos);
   }
 
   /**
@@ -1216,7 +1213,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
    * collation definition.  The behavior of this method follows the contract
    * as defined by java.util.AbstractSet.
    *
-   * @param to_element the highest string in the subset
+   * @param from_element the highest string in the subset
    * @return the sorted subset of string items.
    */
   @Override
@@ -1273,9 +1270,7 @@ public class OrderedSetData extends AbstractSet<ByteArray>
     found_start = end_element_startpos;
 
     // Return the array,
-    DataSectionByteArray byte_array =
-                   new DataSectionByteArray(found_start, end_pos, end_pos - 2);
-    return byte_array;
+    return new DataSectionByteArray(found_start, end_pos, end_pos - 2);
 
 //    long found_start = scanForStartPosition(end_pos - 2, start_pos, end_pos);
 //    return byteArrayAtPosition(found_start, end_pos);

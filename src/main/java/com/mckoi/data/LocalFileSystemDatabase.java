@@ -25,7 +25,6 @@ import com.mckoi.store.LoggingBufferManager;
 import com.mckoi.store.MutableArea;
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * A database implementation that uses the com.mckoi.database.store API to
@@ -366,7 +365,7 @@ public final class LocalFileSystemDatabase implements KeyObjectDatabase {
 
     synchronized (lock_object) {
       // We can't start a database that is already started,
-      if (database_started == true || database_ob != null) {
+      if (database_started || database_ob != null) {
         return false;
       }
 
@@ -464,7 +463,7 @@ public final class LocalFileSystemDatabase implements KeyObjectDatabase {
 
     synchronized (lock_object) {
       // We can't stop a database that hasn't started
-      if (database_started == false || database_ob == null) {
+      if (!database_started || database_ob == null) {
         return;
       }
 

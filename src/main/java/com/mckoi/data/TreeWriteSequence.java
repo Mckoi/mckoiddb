@@ -33,17 +33,17 @@ public class TreeWriteSequence {
   /**
    * The set of leaf nodes allocated by this sequence,
    */
-  private final ArrayList<TreeNode> nodel = new ArrayList(256);
+  private final ArrayList<TreeNode> nodel = new ArrayList<>(256);
 
   /**
    * The set of branch nodes allocated by this sequence,
    */
-  private final ArrayList<TreeNode> nodeb = new ArrayList(256);
+  private final ArrayList<TreeNode> nodeb = new ArrayList<>(256);
 
   /**
    * The set of link commands in this sequence,
    */
-  private final HashMap<Long, Integer> linkc = new HashMap(256);
+  private final HashMap<Long, Integer> linkc = new HashMap<>(256);
 
   /**
    * The counts,

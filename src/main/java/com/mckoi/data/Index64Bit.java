@@ -193,7 +193,7 @@ public interface Index64Bit {
    * another reason (such as the structure being read-only).
    * 
    * @param pos the position of the value to remove from the list.
-   * @returns the value removed from the list.
+   * @return the value removed from the list.
    */
   long remove(long pos);
 

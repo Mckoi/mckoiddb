@@ -38,7 +38,7 @@ public interface KeyObjectDatabase {
    * implemented transaction object should generally provide efficient
    * implementations on its function.
    */
-  public KeyObjectTransaction createTransaction();
+  KeyObjectTransaction createTransaction();
 
   /**
    * Publishes the transaction as the most current version of the
@@ -63,7 +63,7 @@ public interface KeyObjectDatabase {
    * operations.  The reason for this is because operations such as index
    * merges can not be supported in a general way at this level.
    */
-  public void publish(KeyObjectTransaction transaction);
+  void publish(KeyObjectTransaction transaction);
 
   /**
    * Disposes a transaction.  If the transaction was not published by the
@@ -72,7 +72,7 @@ public interface KeyObjectDatabase {
    * 'out of scope' and the database may choose to reclaim resources associated
    * with the transaction.
    */
-  public void dispose(KeyObjectTransaction transaction);
+  void dispose(KeyObjectTransaction transaction);
 
   /**
    * If the underlying data storage structure supports check points, syncs
@@ -84,6 +84,6 @@ public interface KeyObjectDatabase {
    * It is intended for check points to happen immediately after a publish, but
    * it is not necessary and check points can be made at any time.
    */
-  public void checkPoint();
+  void checkPoint();
 
 }

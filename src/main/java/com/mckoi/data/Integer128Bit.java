@@ -76,11 +76,8 @@ public class Integer128Bit implements Comparable<Integer128Bit> {
       return false;
     }
     Integer128Bit dest_ref = (Integer128Bit) ob;
-    if (ref[1] == dest_ref.ref[1] &&
-        ref[0] == dest_ref.ref[0]) {
-      return true;
-    }
-    return false;
+    return (ref[1] == dest_ref.ref[1] &&
+            ref[0] == dest_ref.ref[0]);
   }
 
   /**

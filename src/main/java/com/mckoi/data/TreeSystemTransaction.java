@@ -107,7 +107,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   /**
    * Used to store hints on keys to fetch in subsequent queries.
    */
-  private final HashMap<Key, String> prefetch_keymap = new HashMap();
+  private final HashMap<Key, String> prefetch_keymap = new HashMap<>();
 //  ArrayList<Key> key_prefetch_list = new ArrayList();
 //  private int prefetch_base_access = 0;
 
@@ -194,14 +194,14 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
    */
   private ArrayList<NodeReference> getNodeDeletes() {
     if (node_deletes == null) {
-      node_deletes = new ArrayList(64);
+      node_deletes = new ArrayList<>(64);
     }
     return node_deletes;
   }
 
   private ArrayList<NodeReference> getNodeInserts() {
     if (node_inserts == null) {
-      node_inserts = new ArrayList(64);
+      node_inserts = new ArrayList<>(64);
     }
     return node_inserts;
   }
@@ -250,7 +250,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       return n;
     }
 
-    ArrayList<NodeReference> prefetch_nodeset = new ArrayList();
+    ArrayList<NodeReference> prefetch_nodeset = new ArrayList<>();
     prefetch_nodeset.add(node_ref);
     discoverPrefetchNodeSet(prefetch_nodeset);
 
@@ -531,7 +531,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
     // How this works;
     // * Descend through the tree and try to find the last node of the
     //   previous key.
-    // * If a node is encoutered that is not cached locally, return it.
+    // * If a node is encountered that is not cached locally, return it.
     // * If a leaf is reached, return the next leaf entry from the previous
     //   branch (this should be the first node of key).
 
@@ -947,7 +947,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   /**
    * Compacts the tree by traversing down the tree to the leaf of the given
    * absolute position merging branches to the left as it goes. This should
-   * be used after a large branch delete operation to rebalance the tree
+   * be used after a large branch delete operation to re-balance the tree
    * around the area that was pruned. Note that this only merges nodes that
    * are currently on the heap so should be called immediately after the tree
    * mutation.
@@ -1991,10 +1991,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       return true;
     }
     // Primary key has a reserved group of values at min value
-    if (key.getPrimary() <= Long.MIN_VALUE + 16) {
-      return true;
-    }
-    return false;
+    return (key.getPrimary() <= Long.MIN_VALUE + 16);
   }
 
   /**
@@ -2080,7 +2077,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public DataRange getDataRange(Key min_key, Key max_key) {
@@ -2105,7 +2102,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public DataRange getDataRange() {
@@ -2114,7 +2111,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public void prefetchKeys(Key[] keys) {
@@ -2132,7 +2129,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public GeneralCache getGeneralCache(Scope scope) {
@@ -2149,7 +2146,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
 
 
 //  /**
-//   * {@inhericDoc}
+//   * {@inheritDoc}
 //   */
 //  @Override
 //  public void deleteKeyRange(Key key_min_bound, Key key_max_bound) {
@@ -2369,7 +2366,6 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
       
       // If we need to expand,
       if (to_expand_by > 0) {
-        final long size_diff = to_expand_by;
         // Go to the end position,
         stack.setupForPosition(key, Math.max(start, end - 1));
         // Did we find a leaf for this key?
@@ -3587,7 +3583,7 @@ public class TreeSystemTransaction implements KeyObjectTransaction {
           throw new IndexOutOfBoundsException("Key out of bounds");
         }
 
-        return getDataFile(key, mode);
+        return TreeSystemTransaction.this.getDataFile(key, mode);
 
       }
       catch (VirtualMachineError e) {

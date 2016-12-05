@@ -68,7 +68,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * Details of each version of this BTree as an array list (VersionInfo).
    */
-  private final ArrayList versions;
+  private final List<VersionInfo> versions;
 
   /**
    * The maximum size of the per transaction node heap in bytes.
@@ -131,7 +131,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * Constructs the tree store over the given Store object.  Assumes that the
    * store is initialized and open.
    * <p>
-   * @paran node_store the backing Store
+   * @param node_store the backing Store
    * @param max_branch_children the maximum number of children per branch
    *   (must be multiple of 2)
    * @param max_leaf_size the maximum number of bytes stores in the leaf nodes
@@ -149,7 +149,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
     this.max_leaf_byte_size = max_leaf_size;
     this.node_store = node_store;
     this.node_heap_max_size = node_max_cache_memory;
-    this.versions = new ArrayList();
+    this.versions = new ArrayList<>();
     
     // Allocate some values for the branch cache,
     long branch_size_estimate = (max_branch_children * 24) + 64;
@@ -230,7 +230,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
     node_heap.delete(root_branch.getReference());
 
     // Write this version info to the store,
-    final long version_id = writeSingleVersionInfo(1, root_id, new ArrayList(0));
+    final long version_id = writeSingleVersionInfo(1, root_id, new ArrayList<NodeReference>(0));
 
     // Make a first version
     VersionInfo version_info = new VersionInfo(1, root_id, version_id);
@@ -295,7 +295,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
     for (int i = 0; i < vers_count; ++i) {
       versions.add(vers[i]);
     }
-    // If more than two uncomitted versions, dispose them
+    // If more than two uncommitted versions, dispose them
     if (versions.size() > 2) {
       disposeOldVersions();
     }
@@ -504,13 +504,13 @@ public class StoreBackedTreeSystem implements TreeSystem {
    * that do not have any references to them.
    */
   private void disposeOldVersions() throws IOException {
-    ArrayList dispose_list = new ArrayList();
+    ArrayList<VersionInfo> dispose_list = new ArrayList<>();
     synchronized (versions) {
       // size - 1 because we don't want to delete the very last version,
       int sz = versions.size() - 1;
       boolean found_locked_entry = false;
-      for (int i = 0; i < sz && found_locked_entry == false; ++i) {
-        VersionInfo vinfo = (VersionInfo) versions.get(i);
+      for (int i = 0; i < sz && !found_locked_entry; ++i) {
+        VersionInfo vinfo = versions.get(i);
         // If this version isn't locked,
         if (vinfo.notLocked()) {
           // Add to the dispose list
@@ -628,8 +628,8 @@ public class StoreBackedTreeSystem implements TreeSystem {
     boolean done = false;
     synchronized (versions) {
       int sz = versions.size();
-      for (int i = sz - 1; i >= 0 && done == false; --i) {
-        VersionInfo vinfo = (VersionInfo) versions.get(i);
+      for (int i = sz - 1; i >= 0 && !done; --i) {
+        VersionInfo vinfo = versions.get(i);
         if (vinfo.getVersionID() == version_id) {
           // Unlock this version,
           vinfo.unlock();
@@ -701,7 +701,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
       // list)
       VersionInfo info;
       synchronized (versions) {
-        info = (VersionInfo) versions.get(versions.size() - 1);
+        info = versions.get(versions.size() - 1);
         info.lock();
       }
       return createSnapshot(info);
@@ -732,7 +732,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
       TreeSystemTransaction transaction = (TreeSystemTransaction) tran;
       VersionInfo top_version;
       synchronized (versions) {
-        top_version = (VersionInfo) versions.get(versions.size() - 1);
+        top_version = versions.get(versions.size() - 1);
       }
       // Check the version is based on the must current transaction,
       if (transaction.getVersionID() != top_version.getVersionID()) {
@@ -873,10 +873,8 @@ public class StoreBackedTreeSystem implements TreeSystem {
   public void printSystemStatus(PrintWriter out) throws IOException {
     checkCriticalStop();
     synchronized (versions) {
-      int sz = versions.size();
       out.println("Active version list and locks;");
-      for (int i = 0; i < sz; ++i) {
-        VersionInfo ver_info = (VersionInfo) versions.get(i);
+      for (VersionInfo ver_info : versions) {
         int lock_count = ver_info.lock_count;
         long ver_id = ver_info.version_id;
         out.print("lock(");
@@ -1107,14 +1105,14 @@ public class StoreBackedTreeSystem implements TreeSystem {
   /**
    * Fetches an immutable node kept in the tree at the given node reference.
    */
-  private TreeNode fetchNode(NodeReference node_ref) throws IOException {
+  private TreeNode fetchNode(final NodeReference node_ref) throws IOException {
     // Is it a special static node?
     if (node_ref.isSpecial()) {
       return specialStaticNode(node_ref);
     }
 
     // Is this a branch node in the cache?
-//    Long cache_key = new Long(node_ref);
+    // We use the 'node_ref' field as the unique cache key,
     final NodeReference cache_key = node_ref;
     TreeBranch branch;
     synchronized (branch_cache) {
@@ -1187,7 +1185,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public boolean isNodeAvailableLocally(NodeReference node_ref) {
@@ -1299,7 +1297,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
       List<TreeNode> all_branches = sequence.getAllBranchNodes();
       List<TreeNode> all_leafs = sequence.getAllLeafNodes();
       ArrayList<TreeNode> nodes =
-                       new ArrayList(all_branches.size() + all_leafs.size());
+                       new ArrayList<>(all_branches.size() + all_leafs.size());
       nodes.addAll(all_branches);
       nodes.addAll(all_leafs);
 
@@ -1520,7 +1518,7 @@ public class StoreBackedTreeSystem implements TreeSystem {
   }
 
   /**
-   * {@inhericDoc}
+   * {@inheritDoc}
    */
   @Override
   public boolean featureAccountForAllNodes() {

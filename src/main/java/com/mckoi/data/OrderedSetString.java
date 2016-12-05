@@ -270,7 +270,6 @@ public class OrderedSetString extends AbstractSet<String>
    * @param s the start of the string in the file.
    * @param e the end of the string (including the 0x0FFFF deliminator).
    * @return the String at the given position.
-   * @throws java.io.IOException
    */
   private String stringAtPosition(final long s, final long e) {
     final long to_read = ((e - s) - 2) / 2;
@@ -508,10 +507,7 @@ public class OrderedSetString extends AbstractSet<String>
   public boolean isEmpty() {
     updateInternalState();
     // If start_pos == end_pos then the list is empty
-    if (this.start_pos == this.end_pos) {
-      return true;
-    }
-    return false;
+    return (this.start_pos == this.end_pos);
   }
   
   /**
@@ -702,7 +698,7 @@ public class OrderedSetString extends AbstractSet<String>
    * collation definition.  The behavior of this method follows the contract
    * as defined by java.util.AbstractSet.
    * 
-   * @param to_element the highest string in the subset
+   * @param from_element the highest string in the subset
    * @return the sorted subset of string items.
    */
   public SortedSet<String> tailSet(String from_element) {

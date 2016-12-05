@@ -326,7 +326,7 @@ public class TreeNodeHeap {
       int to_clean = (int) (all_node_count * 0.30);
 
       // Make an array of all nodes to flush,
-      to_flush = new ArrayList(to_clean);
+      to_flush = new ArrayList<>(to_clean);
       // Pull them from the back of the list,
       HashNode node = hash_end;
       while (to_clean > 0 && node != null) {
@@ -343,7 +343,7 @@ public class TreeNodeHeap {
 
       // The mapping of transaction to node list
       HashMap<TreeSystemTransaction, ArrayList<NodeReference>> tran_map =
-                                                                new HashMap();
+                                                                new HashMap<>();
       // Read the list backwards,
       for (int i = to_flush.size() - 1; i >= 0; --i) {
         HashNode node = (HashNode) to_flush.get(i);
@@ -352,7 +352,7 @@ public class TreeNodeHeap {
         // Find the list of this transaction,
         ArrayList<NodeReference> node_list = tran_map.get(tran);
         if (node_list == null) {
-          node_list = new ArrayList(to_flush.size());
+          node_list = new ArrayList<>(to_flush.size());
           tran_map.put(tran, node_list);
         }
         // Add to the list
@@ -383,7 +383,7 @@ public class TreeNodeHeap {
   
   // ----- Inner classes -----
   
-  private static interface HashNode extends TreeNode {
+  private interface HashNode extends TreeNode {
     HashNode getNextHash();
     void setNextHash(HashNode node);
 

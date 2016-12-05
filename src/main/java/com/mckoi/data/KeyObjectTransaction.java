@@ -49,7 +49,7 @@ public interface KeyObjectTransaction {
    * Returns true if a DataFile with the given key exists.  This is exactly
    * the same as (getDataFile(key, 'r').size() > 0).
    */
-  public boolean dataFileExists(Key key);
+  boolean dataFileExists(Key key);
 
   /**
    * Returns a DataFile for the given key.  This method can be called multiple
@@ -64,7 +64,7 @@ public interface KeyObjectTransaction {
    * operations specified in DataFile, including the resize, shift and
    * copy operations.
    */
-  public AddressableDataFile getDataFile(Key key, char mode);
+  AddressableDataFile getDataFile(Key key, char mode);
 
   /**
    * Returns a DataRange object that describes all the keys stored in the
@@ -77,7 +77,7 @@ public interface KeyObjectTransaction {
    * The returned object must provide efficient implementations for all the
    * operations in the interface.
    */
-  public DataRange getDataRange(Key min_key, Key max_key);
+  DataRange getDataRange(Key min_key, Key max_key);
 
   /**
    * Returns a DataRange object that describes the entire set of keys stored
@@ -88,19 +88,19 @@ public interface KeyObjectTransaction {
    * The returned object must provide efficient implementations for all the
    * operations in the interface.
    */
-  public DataRange getDataRange();
+  DataRange getDataRange();
 
   /**
    * Provides a hint that DataFile objects with the given keys may be accessed
-   * shortly and their content or meta-data should be prefetched in
+   * shortly and their content or meta-data should be pre-fetched in
    * preparation. Prefetch is intended to reduce latency when it's known
-   * the likelyhood of the order of objects being accessed.
+   * the likelihood of the order of objects being accessed.
    * <p>
    * How this implementation decides to preload the data is up to the
    * implementation specifics. The implementation can decide to ignore this
    * hint altogether.
    */
-  public void prefetchKeys(Key[] keys);
+  void prefetchKeys(Key[] keys);
 
   /**
    * Returns an implementation of GeneralCache used as a general cache of 
@@ -112,16 +112,16 @@ public interface KeyObjectTransaction {
    * Note that the cache created here is implementation specific. It is
    * valid for this to return NoOpGeneralCache.instance.
    */
-  public GeneralCache getGeneralCache(Scope scope);
+  GeneralCache getGeneralCache(Scope scope);
 
   
-  public enum Scope {
+  enum Scope {
     // Scope where the cache is disposed with the transaction ends,
     TRANSACTION,
     
     // Scope where the cache is disposed when the database session ends,
     SESSION,
 
-  };
+  }
 
 }

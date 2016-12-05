@@ -44,8 +44,8 @@ public class TreeReportNode {
    * Constructor.
    */
   public TreeReportNode() {
-    properties = new HashMap<String, String>(4);
-    children = new ArrayList<TreeReportNode>(12);
+    properties = new HashMap<>(4);
+    children = new ArrayList<>(12);
   }
 
   public TreeReportNode(String node_name, NodeReference area_ref) {
@@ -81,7 +81,7 @@ public class TreeReportNode {
   }
 
   public void setProperty(String key, long value) {
-    properties.put(key, new Long(value).toString());
+    properties.put(key, Long.toString(value));
   } 
   /**
    * Gets a property.

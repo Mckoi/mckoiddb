@@ -42,7 +42,7 @@ public final class AtomicKey extends AbstractKey {
    * Returns a string representation of the key.
    */
   public String toString() {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     buf.append("(");
     buf.append(getSecondary());
     buf.append("-");

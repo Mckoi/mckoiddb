@@ -41,7 +41,7 @@ public interface Iterator64Bit {
    * 'previous' method to return the last value in the set, the position must
    * be set to size().
    *
-   * @param position the position to move to.
+   * @param p the position to move to.
    */
   void position(long p);
 

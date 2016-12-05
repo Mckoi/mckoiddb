@@ -437,9 +437,10 @@ class TreeSystemStack {
                               (NodeReference) nfo[3], (Long) nfo[4],
                               insert_n );
         // Copy r_nfo to nfo
-        for (int p = 0; p < r_nfo.length; ++p) {
-          nfo[p] = r_nfo[p];
-        }
+        System.arraycopy(r_nfo, 0, nfo, 0, r_nfo.length);
+//        for (int p = 0; p < r_nfo.length; ++p) {
+//          nfo[p] = r_nfo[p];
+//        }
 
         // Adjust the left key reference if necessary
         if (left_key != null && insert_n > 0) {
