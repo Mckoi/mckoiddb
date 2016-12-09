@@ -458,14 +458,14 @@ public final class LocalFileSystemDatabase implements KeyObjectDatabase {
    * cleanly shut down.
    */
   public void stop() throws IOException {
-    // Check point before we stop
-    checkPoint();
-
     synchronized (lock_object) {
       // We can't stop a database that hasn't started
       if (!database_started || database_ob == null) {
         return;
       }
+
+      // Check point before we stop
+      checkPoint();
 
       // Close the store
       file_store.close();
