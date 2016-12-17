@@ -43,7 +43,15 @@ public class ODBRootAddress {
     return session;
   }
 
-  DataAddress getDataAddress() {
+  /**
+   * Returns the DataAddress of this root address. The may throw a security
+   * exception if a context doesn't access to the data.
+   */
+  public DataAddress getDataAddress() {
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) {
+      security.checkPermission(MckoiODBPermission.ACCESS_DATA_ADDRESS);
+    }
     return data_address;
   }
 

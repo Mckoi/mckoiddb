@@ -121,7 +121,7 @@ public final class DataAddress implements Comparable<DataAddress> {
 
     // PENDING SECURITY: This needs to be a protected function that is not
     //   available to user functions. We do not want to allow users to be able
-    //   to arbitarily create DataAddress objects because it could be used to
+    //   to arbitrarily create DataAddress objects because it could be used to
     //   inspect the contents of a database outside the snapshot sandbox.
     //
     //   This function does need to be available to be used by low level
