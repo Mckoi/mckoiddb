@@ -131,6 +131,23 @@ public final class DataAddress implements Comparable<DataAddress> {
   }
 
   /**
+   * External method for creating a DataAddress from a NodeReference. Requires
+   * a security check.
+   */
+  public static DataAddress createDataAddress(
+                                  NodeReference node_reference) {
+
+    // Security check,
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) {
+      security.checkPermission(MckoiNetworkPermission.CREATE_DATA_ADDRESS);
+    }
+
+    return new DataAddress(node_reference);
+
+  }
+
+  /**
    * Returns the BlockId for the given NodeReference.
    */
   public static BlockId getBlockIdFrom(NodeReference node) {

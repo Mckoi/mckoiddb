@@ -41,4 +41,7 @@ public class MckoiODBPermission extends BasicPermission {
   final static MckoiODBPermission ACCESS_DATA_ADDRESS =
                   new MckoiODBPermission("access_data_address");
 
+  final static MckoiODBPermission CREATE_ROOT_ADDRESS =
+                  new MckoiODBPermission("create_root_address");
+
 }

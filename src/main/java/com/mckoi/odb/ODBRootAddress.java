@@ -44,15 +44,35 @@ public class ODBRootAddress {
   }
 
   /**
-   * Returns the DataAddress of this root address. The may throw a security
-   * exception if a context doesn't access to the data.
+   * Returns the DataAddress of this root address.
    */
-  public DataAddress getDataAddress() {
+  DataAddress getDataAddress() {
+    return data_address;
+  }
+
+  /**
+   * Public method that returns the DataAddress of this root address. May
+   * throw a security exception if the context doesn't allow access to this
+   * information.
+   */
+  public DataAddress secureGetDataAddress() {
     SecurityManager security = System.getSecurityManager();
     if (security != null) {
       security.checkPermission(MckoiODBPermission.ACCESS_DATA_ADDRESS);
     }
-    return data_address;
+    return getDataAddress();
+  }
+
+  /**
+   * Public object create method requires a security check.
+   */
+  public static ODBRootAddress createODBRootAddress(
+                          ODBSession session, DataAddress data_address) {
+    SecurityManager security = System.getSecurityManager();
+    if (security != null) {
+      security.checkPermission(MckoiODBPermission.CREATE_ROOT_ADDRESS);
+    }
+    return new ODBRootAddress(session, data_address);
   }
 
 }

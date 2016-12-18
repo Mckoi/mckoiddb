@@ -65,4 +65,7 @@ public class MckoiNetworkPermission extends BasicPermission {
   final static MckoiNetworkPermission PARSE_DATA_ADDRESS =
               new MckoiNetworkPermission("dataaddress.parse");
 
+  final static MckoiNetworkPermission CREATE_DATA_ADDRESS =
+              new MckoiNetworkPermission("dataaddress.create");
+
 }
